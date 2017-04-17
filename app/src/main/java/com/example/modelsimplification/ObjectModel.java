@@ -1,6 +1,7 @@
 package com.example.modelsimplification;
 
 import android.util.Log;
+import android.util.StringBuilderPrinter;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -102,9 +103,9 @@ public class ObjectModel {
         // Add this vertex to the array
         vertexList.add(p);
 
-        if (BuildConfig.DEBUG) {
-            Log.d(TAG, "readVertex: " + p);
-        }
+//        if (BuildConfig.DEBUG) {
+//            System.out.println("read vertex:" + p);
+//        }
     } // End of readVertex
 
     void readFace(ObjectFileParser st) throws ParsingErrorException {
@@ -135,9 +136,10 @@ public class ObjectModel {
         }
         st.skipToNextLine();
 
-        if (BuildConfig.DEBUG) {
-            Log.d(TAG, "readFace: " + faceList.get(faceIndex));
-        }
+//        if (BuildConfig.DEBUG) {
+////            Log.d(TAG, "readFace: " + faceList.get(faceIndex));
+//            System.out.println("readFace: " + faceList.get(faceIndex));
+//        }
     } // End of readFace
 
     /**
@@ -198,7 +200,17 @@ public class ObjectModel {
 
         @Override
         public String toString() {
-            return "(" + x + "," + y + "," + z + ")";
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.append("(" + x + "," + y + "," + z + ")\n");
+            stringBuilder.append("Neighbors: ");
+            for (int vIndex : adjacentVerticesIndex) {
+                stringBuilder.append(vIndex + " ");
+            }
+            stringBuilder.append("\nFaces: ");
+            for (int fIndex : adjacentFacesIndex) {
+                stringBuilder.append(fIndex + " ");
+            }
+            return stringBuilder.toString();
         }
     }
 
@@ -224,7 +236,14 @@ public class ObjectModel {
 
 
     public static final void main(String[] args) {
-        String filename = args[0];
+        String filename = "C:\\Users\\Administrator\\Desktop\\dinosaur.2k.obj";
         ObjectModel om = new ObjectModel(filename);
+        System.out.println(om.basePath);
+        for (Vertex v : om.vertexList) {
+            System.out.println("Vertex:" + v);
+        }
+        for (Face f : om.faceList) {
+            System.out.println("Face:" + f);
+        }
     }
 }
