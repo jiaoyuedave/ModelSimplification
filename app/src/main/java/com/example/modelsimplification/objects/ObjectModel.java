@@ -1,7 +1,4 @@
-package com.example.modelsimplification;
-
-import android.util.Log;
-import android.util.StringBuilderPrinter;
+package com.example.modelsimplification.objects;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -19,8 +16,8 @@ public class ObjectModel {
 
     private static final String TAG = "ObjectModel";
 
-    private List<Vertex> vertexList = new ArrayList<>();          // 顶点列表
-    private List<Face> faceList = new ArrayList<>();              // 三角面列表
+    private final List<Vertex> vertexList = new ArrayList<>();          // 顶点列表
+    private final List<Face> faceList = new ArrayList<>();              // 三角面列表
 
     private String basePath;                                      // 基准路径
 
@@ -52,6 +49,29 @@ public class ObjectModel {
 
         readFile(st);
         return this;
+    }
+
+    /**
+     * 生成LoadedObject 对象，用于绘制OpenGL 图形
+     *
+     * @return LoadedObject 对象
+     */
+    public LoadedObject toLoadedObject() {
+        float[] vertexArray = new float[vertexList.size() * 3];
+        for (int i = 0; i < vertexList.size(); i = i + 3) {
+            vertexArray[i] = vertexList.get(i).x;
+            vertexArray[i + 1] = vertexList.get(i).y;
+            vertexArray[i + 2] = vertexList.get(i).z;
+        }
+
+        int[] indexArray = new int[faceList.size() * 3];
+        for (int i = 0; i < faceList.size(); i = i + 3) {
+            indexArray[i] = faceList.get(i).verticesIndex[0];
+            indexArray[i + 1] = faceList.get(i).verticesIndex[1];
+            indexArray[i + 2] = faceList.get(i).verticesIndex[2];
+        }
+
+        return new LoadedObject(vertexArray, indexArray);
     }
 
     /**
@@ -214,13 +234,8 @@ public class ObjectModel {
         }
     }
 
-//    public static class Edge {
-//        private Vector3 v1;
-//        private Vector3 v2;
-//    }
-
     public static class Face {
-        private int[] verticesIndex = new int[3];
+        public int[] verticesIndex = new int[3];
 
         public Face(int vIndex1, int vIndex2, int vIndex3) {
             verticesIndex[0] = vIndex1;

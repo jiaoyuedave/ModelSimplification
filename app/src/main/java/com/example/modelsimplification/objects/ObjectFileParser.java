@@ -1,4 +1,4 @@
-package com.example.modelsimplification;
+package com.example.modelsimplification.objects;
 
 import java.io.IOException;
 import java.io.Reader;

@@ -1,4 +1,4 @@
-package com.example.modelsimplification;
+package com.example.modelsimplification.objects;
 
 //�����������j3d�г�ȡ����Ϊ�˷���
 
