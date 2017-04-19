@@ -8,6 +8,12 @@ import com.example.modelsimplification.objects.LoadedObject;
 import com.example.modelsimplification.objects.ObjectModel;
 import com.example.modelsimplification.programs.LoadedObjectShaderProgram;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
@@ -21,6 +27,7 @@ public class SceneRenderer implements GLSurfaceView.Renderer {
 
     private final Context mContext;
 
+    private final float[] modelMatrix = new float[16];
     private final float[] viewMatrix = new float[16];
     private final float[] projectionMatrix = new float[16];
     private final float[] viewProjectionMatrix = new float[16];
@@ -43,10 +50,14 @@ public class SceneRenderer implements GLSurfaceView.Renderer {
 
         loProgram = new LoadedObjectShaderProgram(mContext);
 
-        ObjectModel objectModel = new ObjectModel("C:\\Users\\Administrator\\Desktop\\dinosaur.2k" +
-                ".obj");
-        loadedObject = objectModel.toLoadedObject();
-
+        try {
+            InputStream in = mContext.getAssets().open("dinosaur.2k.obj");
+            Reader reader = new BufferedReader(new InputStreamReader(in));
+            ObjectModel objectModel = new ObjectModel(reader);
+            loadedObject = objectModel.toLoadedObject();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -60,6 +71,15 @@ public class SceneRenderer implements GLSurfaceView.Renderer {
 
     @Override
     public void onDrawFrame(GL10 gl) {
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        Matrix.multiplyMM(viewProjectionMatrix, 0, projectionMatrix, 0, viewMatrix, 0);
+        Matrix.setIdentityM(modelMatrix, 0);
+        Matrix.multiplyMM(modelViewProjectionMatrix, 0, viewProjectionMatrix, 0, modelMatrix, 0);
+
+        loProgram.useProgram();
+        loProgram.setUniforms(modelViewProjectionMatrix, 1f, 1f, 1f);
+        loadedObject.bindData(loProgram);
+        loadedObject.draw();
     }
 }

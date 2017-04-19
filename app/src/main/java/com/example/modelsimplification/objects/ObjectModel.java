@@ -29,8 +29,16 @@ public class ObjectModel {
         }
     }
 
+    public ObjectModel(Reader reader) {
+        try {
+            load(reader);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
     /**
-     * 从.obj 文件加载三维模型
+     * 从.obj 文件加载三维模型，适用于PC端
      *
      * @param fileName 文件路径
      * @return this
@@ -43,6 +51,13 @@ public class ObjectModel {
         return load(reader);
     }
 
+    /**
+     * 从输入流读取三维模型，android端使用此方法
+     *
+     * @param reader 输入流
+     * @return this
+     * @throws FileNotFoundException
+     */
     public ObjectModel load(Reader reader) throws FileNotFoundException {
         // ObjectFileParser does lexical analysis
         ObjectFileParser st = new ObjectFileParser(reader);
@@ -58,17 +73,17 @@ public class ObjectModel {
      */
     public LoadedObject toLoadedObject() {
         float[] vertexArray = new float[vertexList.size() * 3];
-        for (int i = 0; i < vertexList.size(); i = i + 3) {
-            vertexArray[i] = vertexList.get(i).x;
-            vertexArray[i + 1] = vertexList.get(i).y;
-            vertexArray[i + 2] = vertexList.get(i).z;
+        for (int i = 0; i < vertexList.size(); i++) {
+            vertexArray[i * 3] = vertexList.get(i).x;
+            vertexArray[i * 3 + 1] = vertexList.get(i).y;
+            vertexArray[i * 3 + 2] = vertexList.get(i).z;
         }
 
         int[] indexArray = new int[faceList.size() * 3];
-        for (int i = 0; i < faceList.size(); i = i + 3) {
-            indexArray[i] = faceList.get(i).verticesIndex[0];
-            indexArray[i + 1] = faceList.get(i).verticesIndex[1];
-            indexArray[i + 2] = faceList.get(i).verticesIndex[2];
+        for (int i = 0; i < faceList.size(); i++) {
+            indexArray[i * 3] = faceList.get(i).verticesIndex[0];
+            indexArray[i * 3 + 1] = faceList.get(i).verticesIndex[1];
+            indexArray[i * 3 + 2] = faceList.get(i).verticesIndex[2];
         }
 
         return new LoadedObject(vertexArray, indexArray);
