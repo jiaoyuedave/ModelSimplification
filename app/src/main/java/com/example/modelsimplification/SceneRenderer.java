@@ -65,8 +65,8 @@ public class SceneRenderer implements GLSurfaceView.Renderer {
         // Set the OpenGL viewport to fill the entire surface
         glViewport(0, 0, width, height);
 
-        Matrix.perspectiveM(projectionMatrix, 0, 45, (float) width / height, 1, 10);
-        Matrix.setLookAtM(viewMatrix, 0, 0f, 2f, 3f, 0f, 0f, 0f, 0f, 1f, 0f);
+        Matrix.perspectiveM(projectionMatrix, 0, 45, (float) width / height, 100, 300);
+        Matrix.setLookAtM(viewMatrix, 0, 0f, 0f, 200f, 0f, 0f, 0f, 0f, 1f, 0f);
     }
 
     @Override
@@ -78,7 +78,7 @@ public class SceneRenderer implements GLSurfaceView.Renderer {
         Matrix.multiplyMM(modelViewProjectionMatrix, 0, viewProjectionMatrix, 0, modelMatrix, 0);
 
         loProgram.useProgram();
-        loProgram.setUniforms(modelViewProjectionMatrix, 1f, 1f, 1f);
+        loProgram.setUniforms(modelViewProjectionMatrix, 0.6f, 0.6f, 0.6f);
         loadedObject.bindData(loProgram);
         loadedObject.draw();
     }
