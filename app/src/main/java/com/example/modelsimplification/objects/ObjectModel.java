@@ -1,5 +1,7 @@
 package com.example.modelsimplification.objects;
 
+import com.example.modelsimplification.data.Vector;
+
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -74,9 +76,9 @@ public class ObjectModel {
     public LoadedObject toLoadedObject() {
         float[] vertexArray = new float[vertexList.size() * 3];
         for (int i = 0; i < vertexList.size(); i++) {
-            vertexArray[i * 3] = vertexList.get(i).x;
-            vertexArray[i * 3 + 1] = vertexList.get(i).y;
-            vertexArray[i * 3 + 2] = vertexList.get(i).z;
+            vertexArray[i * 3] = vertexList.get(i).position.x;
+            vertexArray[i * 3 + 1] = vertexList.get(i).position.y;
+            vertexArray[i * 3 + 2] = vertexList.get(i).position.z;
         }
 
         int[] indexArray = new int[faceList.size() * 3];
@@ -127,11 +129,11 @@ public class ObjectModel {
         Vertex p = new Vertex();
 
         st.getNumber();
-        p.x = (float) st.nval;
+        p.position.x = (float) st.nval;
         st.getNumber();
-        p.y = (float) st.nval;
+        p.position.y = (float) st.nval;
         st.getNumber();
-        p.z = (float) st.nval;
+        p.position.z = (float) st.nval;
 
         st.skipToNextLine();
 
@@ -208,11 +210,9 @@ public class ObjectModel {
     }
 
 
-    public static class Vertex {
+    public class Vertex {
 
-        public float x;
-        public float y;
-        public float z;
+        public final Vector position = new Vector();
 
         private List<Integer> adjacentVerticesIndex = new ArrayList<>();         // 相邻顶点的索引
         private List<Integer> adjacentFacesIndex = new ArrayList<>();            // 相邻面的索引
@@ -220,9 +220,9 @@ public class ObjectModel {
         public Vertex() {}
 
         public Vertex(float x, float y, float z) {
-            this.x = x;
-            this.y = y;
-            this.z = z;
+            position.x = x;
+            position.y = y;
+            position.z = z;
         }
 
         public void addNeighbor(int vertexIndex) {
@@ -236,7 +236,7 @@ public class ObjectModel {
         @Override
         public String toString() {
             StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.append("(" + x + "," + y + "," + z + ")\n");
+            stringBuilder.append("(" + position.x + "," + position.y + "," + position.z + ")\n");
             stringBuilder.append("Neighbors: ");
             for (int vIndex : adjacentVerticesIndex) {
                 stringBuilder.append(vIndex + " ");
@@ -249,13 +249,21 @@ public class ObjectModel {
         }
     }
 
-    public static class Face {
-        public int[] verticesIndex = new int[3];
+    public class Face {
+
+        public final int[] verticesIndex = new int[3];
+        public final Vertex normal;
 
         public Face(int vIndex1, int vIndex2, int vIndex3) {
             verticesIndex[0] = vIndex1;
             verticesIndex[1] = vIndex2;
             verticesIndex[2] = vIndex3;
+        }
+
+        private Vector computeNormal() {
+            Vertex p1 = vertexList.get(verticesIndex[0]);
+            Vertex p2 = vertexList.get(verticesIndex[1]);
+            Vertex p3 = vertexList.get(verticesIndex[2]);
         }
 
         @Override

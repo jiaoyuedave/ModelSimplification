@@ -1,0 +1,56 @@
+package com.example.modelsimplification.data;
+
+import android.util.FloatMath;
+import android.util.Log;
+
+/**
+ * Created by lenovo on 2017/4/20.
+ */
+
+public class Vector {
+
+    private static final String TAG = "Vector";
+
+    public float x;
+    public float y;
+    public float z;
+
+    public Vector(){}
+
+    public Vector(float x, float y, float z) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+    }
+
+    public float magnitude() {
+        return (float) Math.sqrt(x * x + y * y + z * z);
+    }
+
+    public void normalize() {
+        float d = magnitude();
+        if (d == 0) {
+            Log.w(TAG, "normalize: try to normalize a zero vector");
+            return;
+        }
+        x /= d;
+        y /= d;
+        z /= d;
+    }
+
+    public float dotProduct(final Vector v) {
+        return x * v.x + y * v.y + z * v.z;
+    }
+
+    public Vector crossProduct(final Vector v) {
+        return new Vector(y * v.z - z * v.y, z * v.x - x * v.z, x * v.y - y * v.x);
+    }
+
+    public static Vector add(final Vector v1, final Vector v2) {
+        return new Vector(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z);
+    }
+
+    public static Vector substract(final Vector v1, final Vector v2) {
+        return new Vector(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z);
+    }
+}
