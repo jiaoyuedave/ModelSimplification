@@ -13,11 +13,15 @@ import static android.opengl.GLES20.glUseProgram;
 
 abstract public class ShaderProgram {
     // Uniform constants
-    protected static final String U_MATRIX = "u_Matrix";
+    protected static final String U_MVPMATRIX = "u_MVPMatrix";
+    protected static final String U_MMATRIX = "u_MMatrix";
+    protected static final String U_LIGHT_LOCATION = "u_LightLocation";
+    protected static final String U_CAMERA = "u_Camera";
     protected static final String U_COLOR = "u_Color";
 
     // Attribute constants
     protected static final String A_POSITION = "a_Position";
+    protected static final String A_NORMAL = "a_Normal";
 
     // Shader program
     protected final int program;

@@ -27,15 +27,16 @@ public class Vector {
         return (float) Math.sqrt(x * x + y * y + z * z);
     }
 
-    public void normalize() {
+    public Vector normalize() {
         float d = magnitude();
         if (d == 0) {
             Log.w(TAG, "normalize: try to normalize a zero vector");
-            return;
+            return this;
         }
         x /= d;
         y /= d;
         z /= d;
+        return this;
     }
 
     public float dotProduct(final Vector v) {
@@ -52,5 +53,10 @@ public class Vector {
 
     public static Vector substract(final Vector v1, final Vector v2) {
         return new Vector(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z);
+    }
+
+    @Override
+    public String toString() {
+        return "(" + x + "," + y + "," + z + ")";
     }
 }

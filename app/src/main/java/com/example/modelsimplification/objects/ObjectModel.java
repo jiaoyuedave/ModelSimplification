@@ -75,10 +75,16 @@ public class ObjectModel {
      */
     public LoadedObject toLoadedObject() {
         float[] vertexArray = new float[vertexList.size() * 3];
+        float[] normalArray = new float[vertexList.size() * 3];
         for (int i = 0; i < vertexList.size(); i++) {
-            vertexArray[i * 3] = vertexList.get(i).position.x;
-            vertexArray[i * 3 + 1] = vertexList.get(i).position.y;
-            vertexArray[i * 3 + 2] = vertexList.get(i).position.z;
+            Vertex vertex = vertexList.get(i);
+            vertexArray[i * 3] = vertex.position.x;
+            vertexArray[i * 3 + 1] = vertex.position.y;
+            vertexArray[i * 3 + 2] = vertex.position.z;
+
+            normalArray[i * 3] = vertex.normal.x;
+            normalArray[i * 3 + 1] = vertex.normal.y;
+            normalArray[i * 3 + 2] = vertex.normal.z;
         }
 
         int[] indexArray = new int[faceList.size() * 3];
@@ -88,7 +94,7 @@ public class ObjectModel {
             indexArray[i * 3 + 2] = faceList.get(i).verticesIndex[2];
         }
 
-        return new LoadedObject(vertexArray, indexArray);
+        return new LoadedObject(vertexArray, normalArray, indexArray);
     }
 
     /**
@@ -158,12 +164,14 @@ public class ObjectModel {
 
         assert (points.size() == 3);
 
-        faceList.add(new Face(points.get(0), points.get(1), points.get(2)));
+        Face face = new Face(points.get(0), points.get(1), points.get(2));
+        faceList.add(face);
         int faceIndex = faceList.size() - 1;
 
         for (int i = 0; i < points.size(); i++) {
             Vertex vertex1 = vertexList.get(points.get(i));
             vertex1.addFace(faceIndex);
+            vertex1.normal = face.normal;
 
             for (int j = i + 1; j < points.size(); j++) {
                 Vertex vertex2 = vertexList.get(points.get(j));
@@ -212,17 +220,28 @@ public class ObjectModel {
 
     public class Vertex {
 
-        public final Vector position = new Vector();
+        public Vector position;
+        public Vector normal;
 
         private List<Integer> adjacentVerticesIndex = new ArrayList<>();         // 相邻顶点的索引
         private List<Integer> adjacentFacesIndex = new ArrayList<>();            // 相邻面的索引
 
-        public Vertex() {}
+        public Vertex() {
+            position = new Vector();
+        }
 
         public Vertex(float x, float y, float z) {
+            position = new Vector();
             position.x = x;
             position.y = y;
             position.z = z;
+        }
+
+        public Vertex(Vector v) {
+            if (v == null) {
+                throw new NullPointerException();
+            }
+            position = v;
         }
 
         public void addNeighbor(int vertexIndex) {
@@ -236,7 +255,8 @@ public class ObjectModel {
         @Override
         public String toString() {
             StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.append("(" + position.x + "," + position.y + "," + position.z + ")\n");
+            stringBuilder.append("Position:" + position + "\n");
+            stringBuilder.append("Normal:" + normal + "\n");
             stringBuilder.append("Neighbors: ");
             for (int vIndex : adjacentVerticesIndex) {
                 stringBuilder.append(vIndex + " ");
@@ -252,18 +272,21 @@ public class ObjectModel {
     public class Face {
 
         public final int[] verticesIndex = new int[3];
-        public final Vertex normal;
+        public final Vector normal;
 
         public Face(int vIndex1, int vIndex2, int vIndex3) {
             verticesIndex[0] = vIndex1;
             verticesIndex[1] = vIndex2;
             verticesIndex[2] = vIndex3;
+            normal = computeNormal();
         }
 
         private Vector computeNormal() {
             Vertex p1 = vertexList.get(verticesIndex[0]);
             Vertex p2 = vertexList.get(verticesIndex[1]);
             Vertex p3 = vertexList.get(verticesIndex[2]);
+            return Vector.substract(p1.position, p2.position).crossProduct(Vector.substract
+                    (p3.position, p2.position)).normalize();
         }
 
         @Override
@@ -281,7 +304,7 @@ public class ObjectModel {
             System.out.println("Vertex:" + v);
         }
         for (Face f : om.faceList) {
-            System.out.println("Face:" + f);
+            System.out.println("Face:" + f + " Normal:" + f.normal);
         }
     }
 }

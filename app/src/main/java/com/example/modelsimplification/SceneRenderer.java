@@ -78,7 +78,8 @@ public class SceneRenderer implements GLSurfaceView.Renderer {
         Matrix.multiplyMM(modelViewProjectionMatrix, 0, viewProjectionMatrix, 0, modelMatrix, 0);
 
         loProgram.useProgram();
-        loProgram.setUniforms(modelViewProjectionMatrix, 0.6f, 0.6f, 0.6f);
+        loProgram.setUniforms(modelViewProjectionMatrix, modelMatrix, new float[]{200, 100, 200},
+                new float[]{0, 0, 200}, 0.9f, 0.9f, 0.9f);
         loadedObject.bindData(loProgram);
         loadedObject.draw();
     }

@@ -16,36 +16,49 @@ import static android.opengl.GLES20.*;
 public class LoadedObject {
 
     private static final int POSITION_COMPONENT_COUNT = 3;
+    private static final int NORMAL_COMPONENT_COUNT = 3;
 
     private final VertexArray vertexArray;
+    private final VertexArray normalArray;
     private final IntBuffer indexArray;
 
     private final int iCount;                              // 索引顶点的数目
 
-    LoadedObject(float[] vertex, int[] index) {
+    LoadedObject(float[] vertices, float[] normals, int[] indices) {
         // Initialize vertex array
-        vertexArray = new VertexArray(vertex);
+        vertexArray = new VertexArray(vertices);
+
+        // Initialize normal array
+        normalArray = new VertexArray(normals);
 
         // Initialize index array
-        iCount = index.length;
-        indexArray = IntBuffer.allocate(iCount).put(index);
+        iCount = indices.length;
+        indexArray = IntBuffer.allocate(iCount).put(indices);
         indexArray.position(0);
 
         if (LoggerConfig.SYS_DEBUG) {
             System.out.println("Vertices:------------------");
-            for (int i = 0; i < vertex.length; i = i + 3) {
-                System.out.println(vertex[i] + " " + vertex[i + 1] + " " + vertex[i + 2]);
+            for (int i = 0; i < vertices.length; i = i + 3) {
+                System.out.println(vertices[i] + " " + vertices[i + 1] + " " + vertices[i + 2]);
+            }
+            System.out.println();
+            System.out.println("Normals:--------------------");
+            for (int i = 0; i < normals.length; i = i + 3) {
+                System.out.println(normals[i] + " " + normals[i + 1] + " " + normals[i + 2]);
             }
             System.out.println();
             System.out.println("Indices:--------------------");
-            for (int i = 0; i < index.length; i = i + 3) {
-                System.out.println(index[i] + " " + index[i + 1] + " " + index[i + 2]);
+            for (int i = 0; i < indices.length; i = i + 3) {
+                System.out.println(indices[i] + " " + indices[i + 1] + " " + indices[i + 2]);
             }
         }
     }
 
     public void bindData(LoadedObjectShaderProgram program) {
-        vertexArray.setVertexAttribPointer(0, program.getPositionAttributeLocation(), POSITION_COMPONENT_COUNT, 0);
+        vertexArray.setVertexAttribPointer(0, program.getPositionAttributeLocation(),
+                POSITION_COMPONENT_COUNT, 0);
+        normalArray.setVertexAttribPointer(0, program.getNormalLocation(),
+                NORMAL_COMPONENT_COUNT, 0);
     }
 
     public void draw() {
