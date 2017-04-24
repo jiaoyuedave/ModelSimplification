@@ -23,9 +23,13 @@ public class LoadedObject extends GLObject {
     private final VertexArray normalArray;
     private final IntBuffer indexArray;
 
+    private LoadedObjectShaderProgram mProgram;
+
     private final int iCount;                              // 索引顶点的数目
 
     LoadedObject(float[] vertices, float[] normals, int[] indices) {
+        super();
+
         // Initialize vertex array
         vertexArray = new VertexArray(vertices);
 
@@ -56,6 +60,15 @@ public class LoadedObject extends GLObject {
     }
 
     public void bindData(LoadedObjectShaderProgram program) {
+        vertexArray.setVertexAttribPointer(0, program.getPositionAttributeLocation(),
+                POSITION_COMPONENT_COUNT, 0);
+        normalArray.setVertexAttribPointer(0, program.getNormalLocation(),
+                NORMAL_COMPONENT_COUNT, 0);
+    }
+
+    public void bindProgram(LoadedObjectShaderProgram program) {
+
+
         vertexArray.setVertexAttribPointer(0, program.getPositionAttributeLocation(),
                 POSITION_COMPONENT_COUNT, 0);
         normalArray.setVertexAttribPointer(0, program.getNormalLocation(),

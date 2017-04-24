@@ -27,11 +27,6 @@ public class SceneRenderer implements GLSurfaceView.Renderer {
 
     private final Context mContext;
 
-    private final float[] viewMatrix = new float[16];
-    private final float[] projectionMatrix = new float[16];
-    private final float[] viewProjectionMatrix = new float[16];
-    private final float[] modelViewProjectionMatrix = new float[16];
-
     private LoadedObjectShaderProgram loProgram;
 
     private LoadedObject loadedObject;
@@ -66,21 +61,17 @@ public class SceneRenderer implements GLSurfaceView.Renderer {
         // Set the OpenGL viewport to fill the entire surface
         glViewport(0, 0, width, height);
 
-        Matrix.perspectiveM(projectionMatrix, 0, 45, (float) width / height, 100, 300);
-        Matrix.setLookAtM(viewMatrix, 0, 0f, 0f, 200f, 0f, 0f, 0f, 0f, 1f, 0f);
+        GlobalState.setPerspectiveProjection(45, (float) width / height, 100, 300);
+        GlobalState.setCamera(0f, 0f, 200f, 0f, 0f, 0f, 0f, 1f, 0f);
     }
 
     @Override
     public void onDrawFrame(GL10 gl) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        Matrix.multiplyMM(viewProjectionMatrix, 0, projectionMatrix, 0, viewMatrix, 0);
-        Matrix.multiplyMM(modelViewProjectionMatrix, 0, viewProjectionMatrix, 0, loadedObject
-                .getMMatrix(), 0);
-
         loProgram.useProgram();
-        loProgram.setUniforms(modelViewProjectionMatrix, loadedObject.getMMatrix(), new
-                float[]{0, 0, -1}, new float[]{0, 0, 200}, 0.9f, 0.9f, 0.9f);
+        loProgram.setUniforms(GlobalState.getFinalMatrix(loadedObject.getMMatrix()), loadedObject
+                .getMMatrix(), new float[]{0, 0, -1}, new float[]{0, 0, 200}, 0.9f, 0.9f, 0.9f);
         loadedObject.bindData(loProgram);
         loadedObject.draw();
     }

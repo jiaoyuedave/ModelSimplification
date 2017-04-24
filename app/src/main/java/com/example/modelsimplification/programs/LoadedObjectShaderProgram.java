@@ -4,6 +4,7 @@ import android.content.Context;
 
 import static android.opengl.GLES20.*;
 
+import com.example.modelsimplification.GlobalState;
 import com.example.modelsimplification.R;
 
 /**
@@ -54,7 +55,7 @@ public class LoadedObjectShaderProgram extends ShaderProgram {
         glUniform4f(uColorLocation, r, g, b, 1f);
     }
     */
-
+/*
     public void setUniforms(float[] MVPMatrix, float[] MMatrix, float[] lightDirection, float[]
             camera, float r, float g, float b) {
         // Pass the uniforms to the vertex shader
@@ -62,6 +63,18 @@ public class LoadedObjectShaderProgram extends ShaderProgram {
         glUniformMatrix4fv(uMMatrixLocation, 1, false, MMatrix, 0);
         glUniform3fv(uLightDirectionLocation, 0, lightDirection, 0);
         glUniform3fv(uCameraLocation, 1, camera, 0);
+
+        // Pass the uniforms to the fragment shader
+        glUniform4f(uColorLocation, r, g, b, 1f);
+    }
+*/
+
+    public void updateProgram(float[] MMatrix) {
+        // Pass the uniforms to the vertex shader
+        glUniformMatrix4fv(uMVPMatrixLocation, 1, false, GlobalState.getFinalMatrix(MMatrix), 0);
+        glUniformMatrix4fv(uMMatrixLocation, 1, false, MMatrix, 0);
+        glUniform3fv(uLightDirectionLocation, 0, GlobalState.getLightDirection(), 0);
+        glUniform3fv(uCameraLocation, 1, GlobalState.getCameraLocation(), 0);
 
         // Pass the uniforms to the fragment shader
         glUniform4f(uColorLocation, r, g, b, 1f);

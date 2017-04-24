@@ -3,7 +3,6 @@ package com.example.modelsimplification.objects;
 import android.opengl.Matrix;
 
 import com.example.modelsimplification.data.MatrixStack;
-import com.example.modelsimplification.programs.ShaderProgram;
 
 /**
  * Created by Administrator on 2017/4/24.
@@ -11,13 +10,31 @@ import com.example.modelsimplification.programs.ShaderProgram;
 
 abstract public class GLObject {
 
+    /**
+     * 模型矩阵，用于保存物体的位置状态
+     */
     private float[] MMatrix;
+    /**
+     * 物体颜色
+     */
+    private float[] color;
 
     private MatrixStack matrixStack = new MatrixStack();
 
     protected GLObject() {
         MMatrix = new float[16];
         Matrix.setRotateM(MMatrix, 0, 0, 1, 0, 0);
+        color = new float[]{1, 1, 1};
+    }
+
+    public void setColor(float x, float y, float z) {
+        color[0] = x;
+        color[1] = y;
+        color[2] = z;
+    }
+
+    public float[] getColor() {
+        return color;
     }
 
     /**
