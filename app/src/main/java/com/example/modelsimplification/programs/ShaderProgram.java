@@ -16,6 +16,7 @@ abstract public class ShaderProgram {
     protected static final String U_MVPMATRIX = "u_MVPMatrix";
     protected static final String U_MMATRIX = "u_MMatrix";
     protected static final String U_LIGHT_LOCATION = "u_LightLocation";
+    protected static final String U_LIGHT_DIRECTION = "u_LightDirection";
     protected static final String U_CAMERA = "u_Camera";
     protected static final String U_COLOR = "u_Color";
 

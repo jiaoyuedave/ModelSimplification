@@ -5,6 +5,7 @@ import com.example.modelsimplification.programs.LoadedObjectShaderProgram;
 import com.example.modelsimplification.util.LoggerConfig;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 
 import static android.opengl.GLES20.*;
@@ -13,7 +14,7 @@ import static android.opengl.GLES20.*;
  * Created by Administrator on 2017/4/18.
  */
 
-public class LoadedObject {
+public class LoadedObject extends GLObject {
 
     private static final int POSITION_COMPONENT_COUNT = 3;
     private static final int NORMAL_COMPONENT_COUNT = 3;

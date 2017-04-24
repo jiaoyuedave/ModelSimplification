@@ -27,7 +27,6 @@ public class SceneRenderer implements GLSurfaceView.Renderer {
 
     private final Context mContext;
 
-    private final float[] modelMatrix = new float[16];
     private final float[] viewMatrix = new float[16];
     private final float[] projectionMatrix = new float[16];
     private final float[] viewProjectionMatrix = new float[16];
@@ -58,6 +57,8 @@ public class SceneRenderer implements GLSurfaceView.Renderer {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        loadedObject.rotate(90, 0, 0, 1);
     }
 
     @Override
@@ -74,12 +75,12 @@ public class SceneRenderer implements GLSurfaceView.Renderer {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         Matrix.multiplyMM(viewProjectionMatrix, 0, projectionMatrix, 0, viewMatrix, 0);
-        Matrix.setIdentityM(modelMatrix, 0);
-        Matrix.multiplyMM(modelViewProjectionMatrix, 0, viewProjectionMatrix, 0, modelMatrix, 0);
+        Matrix.multiplyMM(modelViewProjectionMatrix, 0, viewProjectionMatrix, 0, loadedObject
+                .getMMatrix(), 0);
 
         loProgram.useProgram();
-        loProgram.setUniforms(modelViewProjectionMatrix, modelMatrix, new float[]{200, 100, 200},
-                new float[]{0, 0, 200}, 0.9f, 0.9f, 0.9f);
+        loProgram.setUniforms(modelViewProjectionMatrix, loadedObject.getMMatrix(), new
+                float[]{0, 0, -1}, new float[]{0, 0, 200}, 0.9f, 0.9f, 0.9f);
         loadedObject.bindData(loProgram);
         loadedObject.draw();
     }
