@@ -53,7 +53,9 @@ public class SceneRenderer implements GLSurfaceView.Renderer {
             e.printStackTrace();
         }
 
+        loadedObject.bindProgram(loProgram);
         loadedObject.rotate(90, 0, 0, 1);
+        loadedObject.setColor(0.9f, 0.9f, 0.9f, 1f);
     }
 
     @Override
@@ -63,16 +65,13 @@ public class SceneRenderer implements GLSurfaceView.Renderer {
 
         GlobalState.setPerspectiveProjection(45, (float) width / height, 100, 300);
         GlobalState.setCamera(0f, 0f, 200f, 0f, 0f, 0f, 0f, 1f, 0f);
+        GlobalState.setLightDirection(0, 0, -1);
     }
 
     @Override
     public void onDrawFrame(GL10 gl) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        loProgram.useProgram();
-        loProgram.setUniforms(GlobalState.getFinalMatrix(loadedObject.getMMatrix()), loadedObject
-                .getMMatrix(), new float[]{0, 0, -1}, new float[]{0, 0, 200}, 0.9f, 0.9f, 0.9f);
-        loadedObject.bindData(loProgram);
         loadedObject.draw();
     }
 }

@@ -55,9 +55,9 @@ public class LoadedObjectShaderProgram extends ShaderProgram {
         glUniform4f(uColorLocation, r, g, b, 1f);
     }
     */
-/*
+
     public void setUniforms(float[] MVPMatrix, float[] MMatrix, float[] lightDirection, float[]
-            camera, float r, float g, float b) {
+            camera, float[] color) {
         // Pass the uniforms to the vertex shader
         glUniformMatrix4fv(uMVPMatrixLocation, 1, false, MVPMatrix, 0);
         glUniformMatrix4fv(uMMatrixLocation, 1, false, MMatrix, 0);
@@ -65,20 +65,9 @@ public class LoadedObjectShaderProgram extends ShaderProgram {
         glUniform3fv(uCameraLocation, 1, camera, 0);
 
         // Pass the uniforms to the fragment shader
-        glUniform4f(uColorLocation, r, g, b, 1f);
+        glUniform4fv(uColorLocation, 1, color, 0);
     }
-*/
 
-    public void updateProgram(float[] MMatrix) {
-        // Pass the uniforms to the vertex shader
-        glUniformMatrix4fv(uMVPMatrixLocation, 1, false, GlobalState.getFinalMatrix(MMatrix), 0);
-        glUniformMatrix4fv(uMMatrixLocation, 1, false, MMatrix, 0);
-        glUniform3fv(uLightDirectionLocation, 0, GlobalState.getLightDirection(), 0);
-        glUniform3fv(uCameraLocation, 1, GlobalState.getCameraLocation(), 0);
-
-        // Pass the uniforms to the fragment shader
-        glUniform4f(uColorLocation, r, g, b, 1f);
-    }
 
     public int getPositionAttributeLocation() {
         return aPositionLocation;

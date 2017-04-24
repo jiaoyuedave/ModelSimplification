@@ -13,24 +13,25 @@ abstract public class GLObject {
     /**
      * 模型矩阵，用于保存物体的位置状态
      */
-    private float[] MMatrix;
+    protected float[] MMatrix;
     /**
      * 物体颜色
      */
-    private float[] color;
+    protected float[] color;
 
     private MatrixStack matrixStack = new MatrixStack();
 
     protected GLObject() {
         MMatrix = new float[16];
         Matrix.setRotateM(MMatrix, 0, 0, 1, 0, 0);
-        color = new float[]{1, 1, 1};
+        color = new float[]{1, 1, 1, 1};
     }
 
-    public void setColor(float x, float y, float z) {
-        color[0] = x;
-        color[1] = y;
-        color[2] = z;
+    public void setColor(float r, float g, float b, float a) {
+        color[0] = r;
+        color[1] = g;
+        color[2] = b;
+        color[3] = a;
     }
 
     public float[] getColor() {

@@ -1,5 +1,6 @@
 package com.example.modelsimplification.objects;
 
+import com.example.modelsimplification.GlobalState;
 import com.example.modelsimplification.data.VertexArray;
 import com.example.modelsimplification.programs.LoadedObjectShaderProgram;
 import com.example.modelsimplification.util.LoggerConfig;
@@ -59,23 +60,23 @@ public class LoadedObject extends GLObject {
         }
     }
 
-    public void bindData(LoadedObjectShaderProgram program) {
-        vertexArray.setVertexAttribPointer(0, program.getPositionAttributeLocation(),
-                POSITION_COMPONENT_COUNT, 0);
-        normalArray.setVertexAttribPointer(0, program.getNormalLocation(),
-                NORMAL_COMPONENT_COUNT, 0);
+    public void bindProgram(LoadedObjectShaderProgram program) {
+        mProgram = program;
+        mProgram.useProgram();
     }
 
-    public void bindProgram(LoadedObjectShaderProgram program) {
-
-
-        vertexArray.setVertexAttribPointer(0, program.getPositionAttributeLocation(),
-                POSITION_COMPONENT_COUNT, 0);
-        normalArray.setVertexAttribPointer(0, program.getNormalLocation(),
-                NORMAL_COMPONENT_COUNT, 0);
+    public void update() {
+        mProgram.setUniforms(GlobalState.getFinalMatrix(MMatrix), MMatrix, GlobalState
+                .getLightDirection(), GlobalState.getCameraLocation(), color);
     }
 
     public void draw() {
+        update();
+        vertexArray.setVertexAttribPointer(0, mProgram.getPositionAttributeLocation(),
+                POSITION_COMPONENT_COUNT, 0);
+        normalArray.setVertexAttribPointer(0, mProgram.getNormalLocation(),
+                NORMAL_COMPONENT_COUNT, 0);
+
         glDrawElements(GL_TRIANGLES, iCount, GL_UNSIGNED_INT, indexArray);
     }
 
