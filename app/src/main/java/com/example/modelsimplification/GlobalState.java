@@ -2,6 +2,10 @@ package com.example.modelsimplification;
 
 import android.opengl.Matrix;
 
+import com.example.modelsimplification.data.Vector;
+
+import java.util.Arrays;
+
 /**
  * Created by Administrator on 2017/4/24.
  */
@@ -16,6 +20,8 @@ public class GlobalState {
     private static float[] lightLocation = new float[3];
     private static float[] lightDirection = new float[3];
     private static float[] cameraLocation = new float[3];
+    private static float[] cameraCenter = new float[3];
+    private static float[] cameraUp = new float[3];
 
     /**
      *  设置透视投影
@@ -44,11 +50,66 @@ public class GlobalState {
      */
     public static void setCamera(float cx, float cy, float cz, float tx, float ty, float tz,
                                  float upx, float upy, float upz) {
-        Matrix.setLookAtM(viewMatrix, 0, cx, cy, cz, tx, ty, tz, upx, upy, upz);
-
         cameraLocation[0] = cx;
         cameraLocation[1] = cy;
         cameraLocation[2] = cz;
+
+        cameraCenter[0] = tx;
+        cameraCenter[1] = ty;
+        cameraCenter[2] = tz;
+
+        cameraUp[0] = upx;
+        cameraUp[1] = upy;
+        cameraUp[2] = upz;
+
+        setCamera();
+    }
+
+    /**
+     * 设置摄像机的位置
+     *
+     * @param loc 摄像机的位置
+     */
+    public static void setCameraLocation(float[] loc) {
+        cameraLocation = loc;
+        setCamera();
+    }
+
+    /**
+     * 设置摄像机中心朝向
+     *
+     * @param center 摄像机的中心朝向
+     */
+    public static void setCameraCenter(float[] center) {
+        cameraCenter = center;
+        setCamera();
+    }
+
+    /**
+     * 设置摄像机的头部朝向
+     *
+     * @param up 摄像机头部朝向
+     */
+    public static void setCameraUp(float[] up) {
+        cameraUp = up;
+        setCamera();
+    }
+
+    /**
+     * 平移摄像机，摄像机中心及头部朝向不变
+     *
+     * @param vec 平移向量
+     */
+    public static void moveCamera(float[] vec) {
+        cameraLocation[0] += vec[0];
+        cameraLocation[1] += vec[1];
+        cameraLocation[2] += vec[2];
+
+        cameraCenter[0] += vec[0];
+        cameraCenter[1] += vec[1];
+        cameraCenter[2] += vec[2];
+
+        setCamera();
     }
 
     public static float[] getFinalMatrix(float[] modelMatirx) {
@@ -73,10 +134,10 @@ public class GlobalState {
     /**
      * 获取点光源位置，使用点光源时有效
      *
-     * @return
+     * @return 点光源位置的拷贝
      */
     public static float[] getLightLocation() {
-        return lightLocation;
+        return Arrays.copyOf(lightLocation, lightLocation.length);
     }
 
     /**
@@ -95,18 +156,29 @@ public class GlobalState {
     /**
      * 获取平行光方向，使用平行光时有效
      *
-     * @return 平行光方向
+     * @return 平行光方向的拷贝
      */
     public static float[] getLightDirection() {
-        return lightDirection;
+        return Arrays.copyOf(lightDirection, lightDirection.length);
     }
 
     /**
      * 获取摄像机位置
      *
-     * @return 摄像机位置
+     * @return 摄像机位置的拷贝
      */
     public static float[] getCameraLocation() {
-        return cameraLocation;
+        return Arrays.copyOf(cameraLocation, cameraLocation.length);
+    }
+
+    public static float[] getCameraCenter() {
+        return Arrays.copyOf(cameraCenter, cameraCenter.length);
+    }
+
+    private static void setCamera() {
+        Matrix.setLookAtM(viewMatrix, 0,
+                cameraLocation[0], cameraLocation[1], cameraLocation[2],
+                cameraCenter[0], cameraCenter[1], cameraCenter[2],
+                cameraUp[0], cameraUp[1], cameraUp[2]);
     }
 }

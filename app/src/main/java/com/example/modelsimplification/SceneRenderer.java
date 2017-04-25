@@ -2,7 +2,6 @@ package com.example.modelsimplification;
 
 import android.content.Context;
 import android.opengl.GLSurfaceView;
-import android.opengl.Matrix;
 
 import com.example.modelsimplification.objects.LoadedObject;
 import com.example.modelsimplification.objects.ObjectModel;
@@ -17,7 +16,14 @@ import java.io.Reader;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-import static android.opengl.GLES20.*;
+import static android.opengl.GLES20.GL_COLOR_BUFFER_BIT;
+import static android.opengl.GLES20.GL_CULL_FACE;
+import static android.opengl.GLES20.GL_DEPTH_BUFFER_BIT;
+import static android.opengl.GLES20.GL_DEPTH_TEST;
+import static android.opengl.GLES20.glClear;
+import static android.opengl.GLES20.glClearColor;
+import static android.opengl.GLES20.glEnable;
+import static android.opengl.GLES20.glViewport;
 
 /**
  * Created by Administrator on 2017/4/18.
@@ -55,6 +61,7 @@ public class SceneRenderer implements GLSurfaceView.Renderer {
 
         loadedObject.bindProgram(loProgram);
         loadedObject.rotate(90, 0, 0, 1);
+        loadedObject.rotate(90, 0, 1, 0);
         loadedObject.setColor(0.9f, 0.9f, 0.9f, 1f);
     }
 
@@ -63,9 +70,9 @@ public class SceneRenderer implements GLSurfaceView.Renderer {
         // Set the OpenGL viewport to fill the entire surface
         glViewport(0, 0, width, height);
 
-        GlobalState.setPerspectiveProjection(45, (float) width / height, 100, 300);
+        GlobalState.setPerspectiveProjection(45, (float) width / height, 1, 1000);
         GlobalState.setCamera(0f, 0f, 200f, 0f, 0f, 0f, 0f, 1f, 0f);
-        GlobalState.setLightDirection(0, 0, -1);
+        GlobalState.setLightDirection(-1, 0, -3);
     }
 
     @Override
@@ -73,5 +80,15 @@ public class SceneRenderer implements GLSurfaceView.Renderer {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         loadedObject.draw();
+    }
+
+    public void handleTouchDrag(float deltaX, float deltaY) {
+        float[] v = new float[]{-deltaX / 16, deltaY / 16, 0};
+        GlobalState.moveCamera(v);
+    }
+
+    public void handleScaleGesture(float scaleFactor) {
+        float[] v = new float[]{0, 0, -5 * scaleFactor};
+        GlobalState.moveCamera(v);
     }
 }
