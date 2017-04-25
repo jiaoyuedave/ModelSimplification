@@ -272,13 +272,17 @@ public class ObjectModel {
     public class Face {
 
         public final int[] verticesIndex = new int[3];
-        public final Vector normal;
+        public final Vector normal;      // 面的单位法向量
+        public final float[] K;          // fundamental error quadric
+
 
         public Face(int vIndex1, int vIndex2, int vIndex3) {
             verticesIndex[0] = vIndex1;
             verticesIndex[1] = vIndex2;
             verticesIndex[2] = vIndex3;
+
             normal = computeNormal();
+            K = computeK();
         }
 
         private Vector computeNormal() {
@@ -287,6 +291,23 @@ public class ObjectModel {
             Vertex p3 = vertexList.get(verticesIndex[2]);
             return Vector.substract(p1.position, p2.position).crossProduct(Vector.substract
                     (p3.position, p2.position)).normalize();
+        }
+
+        private float[] computeK() {
+            // suppose the plane(face) is denoted as p = [a, b, c, d]^T
+            Vertex oneVertex = vertexList.get(verticesIndex[0]);            // 任取面的一个顶点
+            float d = - normal.dotProduct(oneVertex.position);
+            float[] p = new float[]{normal.x, normal.y, normal.z, d};
+
+            // K = p * p^T
+            float[] K = new float[16];
+            for (int i = 0; i < 4; i++) {
+                for (int j = 0; j < 4; j++) {
+                    // 注意，这里为了与OpenGL 兼容，使用列向量的方式组织矩阵
+                    K[i + j * 4] = p[i] * p[j];
+                }
+            }
+            return K;
         }
 
         @Override
