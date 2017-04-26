@@ -11,7 +11,9 @@ import java.io.FileReader;
 import java.io.Reader;
 import java.io.StreamTokenizer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.TreeMap;
 
 /**
  * Created by Administrator on 2017/4/14.
@@ -23,6 +25,7 @@ public class ObjectModel {
 
     private final List<Vertex> vertexList = new ArrayList<>();          // 顶点列表
     private final List<Face> faceList = new ArrayList<>();              // 三角面列表
+    private final TreeMap<Float, Integer> permutation = new TreeMap<>();       // 收缩消耗排列
 
     private String basePath;                                      // 基准路径
 
@@ -220,13 +223,28 @@ public class ObjectModel {
         }
     }
 
+    private void computeAllCost() {
+        for (Face f : faceList) {
+            f.computeK();
+        }
+        for (Vertex v : vertexList) {
+            v.computeQ();
+        }
+        for (Vertex v : vertexList) {
+            v.computeCostAndCandidate();
+            permutation.put(v.cost, v.candidateIndex);
+        }
+    }
+
 
     public class Vertex {
 
         public Vector position;
         public Vector normal;
+
         public float[] Q;         // error quardic
-        public Vertex candidate;        // 代价最小的收缩顶点
+        public int candidateIndex;            // 收缩的另一个端点的索引
+        public float[] bestPosition;        // 代价最小的收缩顶点的位置
         public float cost;              // 最小收缩代价
 
         private List<Integer> adjacentVerticesIndex = new ArrayList<>();         // 相邻顶点的索引
@@ -272,6 +290,26 @@ public class ObjectModel {
             }
         }
 
+        /**
+         * 计算该点最小的折叠代价以及最佳的折叠位置
+         */
+        public void computeCostAndCandidate() {
+            cost = Float.MAX_VALUE;
+            if (adjacentVerticesIndex.size() == 0) {
+                // 如果该点为孤立的点，则优先收缩
+                cost = 0;
+            }
+            for (int vIndex : adjacentVerticesIndex) {
+                float[] tempPosition = new float[4];
+                float tempCost = computeCostCollapseTo(vertexList.get(vIndex), tempPosition);
+                if (tempCost < cost) {
+                    candidateIndex = vIndex;
+                    cost = tempCost;
+                    bestPosition = tempPosition;
+                }
+            }
+        }
+
         private float computeCostCollapseTo(Vertex v, float[] newPosition) {
             // Qe = Q1 + Q2
             float[] Qe = new float[16];
@@ -284,6 +322,7 @@ public class ObjectModel {
             float[] Qe_v = new float[16];
             float cost = Float.MAX_VALUE;
             if (Matrix.invertM(Qe_v, 0, Qe, 0)) {
+                // 计算新顶点的位置
                 Matrix.multiplyMV(newPosition, 0, Qe_v, 0, new float[]{0, 0, 0, 1}, 0);
 
                 float[] temp = new float[4];
@@ -298,7 +337,7 @@ public class ObjectModel {
                 float cost1 = MatrixHelper.dotProduct(v1, temp);
                 if (cost1 < cost) {
                     cost = cost1;
-                    newPosition = v1;
+                    System.arraycopy(v1, 0, newPosition, 0, 4);
                 }
 
                 // 收缩点为另一端点
@@ -307,7 +346,7 @@ public class ObjectModel {
                 float cost2 = MatrixHelper.dotProduct(v2, temp);
                 if (cost2 < cost) {
                     cost = cost2;
-                    newPosition = v2;
+                    System.arraycopy(v2, 0, newPosition, 0, 4);
                 }
 
                 // 收缩点为中点
@@ -320,7 +359,7 @@ public class ObjectModel {
                 float cost3 = MatrixHelper.dotProduct(v3, temp);
                 if (cost3 < cost) {
                     cost = cost3;
-                    newPosition = v3;
+                    System.arraycopy(v3, 0, newPosition, 0, 4);
                 }
             }
             return cost;
@@ -343,7 +382,7 @@ public class ObjectModel {
         }
     }
 
-    public class Face {
+    private class Face {
 
         public final int[] verticesIndex = new int[3];
         public final Vector normal;      // 面的单位法向量
