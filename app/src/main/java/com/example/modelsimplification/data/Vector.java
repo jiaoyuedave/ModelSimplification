@@ -47,6 +47,10 @@ public class Vector {
         return new Vector(y * v.z - z * v.y, z * v.x - x * v.z, x * v.y - y * v.x);
     }
 
+    public float[] toFloatArray() {
+        return new float[]{x, y, z, 1};
+    }
+
     public static Vector add(final Vector v1, final Vector v2) {
         return new Vector(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z);
     }

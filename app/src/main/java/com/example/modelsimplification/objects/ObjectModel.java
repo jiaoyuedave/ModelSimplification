@@ -1,6 +1,9 @@
 package com.example.modelsimplification.objects;
 
+import android.opengl.Matrix;
+
 import com.example.modelsimplification.data.Vector;
+import com.example.modelsimplification.util.MatrixHelper;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -222,6 +225,9 @@ public class ObjectModel {
 
         public Vector position;
         public Vector normal;
+        public float[] Q;         // error quardic
+        public Vertex candidate;        // 代价最小的收缩顶点
+        public float cost;              // 最小收缩代价
 
         private List<Integer> adjacentVerticesIndex = new ArrayList<>();         // 相邻顶点的索引
         private List<Integer> adjacentFacesIndex = new ArrayList<>();            // 相邻面的索引
@@ -252,6 +258,74 @@ public class ObjectModel {
             adjacentFacesIndex.add(faceIndex);
         }
 
+        /**
+         * 计算每个顶点的二次方误差矩阵，必须先调用Face 的computeK() 方法计算面的基础二次方误差矩阵
+         */
+        public void computeQ() {
+            // Q = sum(K)
+            Q = new float[16];
+            for (int fIndex : adjacentFacesIndex) {
+                Face temp = faceList.get(fIndex);
+                for (int i = 0; i < 16; i++) {
+                    Q[i] += temp.K[i];
+                }
+            }
+        }
+
+        private float computeCostCollapseTo(Vertex v, float[] newPosition) {
+            // Qe = Q1 + Q2
+            float[] Qe = new float[16];
+            for (int i = 0; i < 16; i++) {
+                Qe[i] = this.Q[i] + v.Q[i];
+            }
+
+            Qe[3] = Qe[7] = Qe[11] = 0;
+            Qe[15] = 1;
+            float[] Qe_v = new float[16];
+            float cost = Float.MAX_VALUE;
+            if (Matrix.invertM(Qe_v, 0, Qe, 0)) {
+                Matrix.multiplyMV(newPosition, 0, Qe_v, 0, new float[]{0, 0, 0, 1}, 0);
+
+                float[] temp = new float[4];
+                Matrix.multiplyMV(temp, 0, Qe, 0, newPosition, 0);
+                cost = MatrixHelper.dotProduct(newPosition, temp);
+            } else{
+                // 矩阵不可逆，则选择收缩点在两个端点或者中点
+                // 收缩点选在此端点
+                float[] v1 = this.position.toFloatArray();
+                float[] temp = new float[4];
+                Matrix.multiplyMV(temp, 0, Qe, 0, v1, 0);
+                float cost1 = MatrixHelper.dotProduct(v1, temp);
+                if (cost1 < cost) {
+                    cost = cost1;
+                    newPosition = v1;
+                }
+
+                // 收缩点为另一端点
+                float[] v2 = v.position.toFloatArray();
+                Matrix.multiplyMV(temp, 0, Qe, 0, v2, 0);
+                float cost2 = MatrixHelper.dotProduct(v2, temp);
+                if (cost2 < cost) {
+                    cost = cost2;
+                    newPosition = v2;
+                }
+
+                // 收缩点为中点
+                float[] v3 = new float[]{
+                        (this.position.x + v.position.x) / 2,
+                        (this.position.y + v.position.y) / 2,
+                        (this.position.z + v.position.z) / 2,
+                        1};
+                Matrix.multiplyMV(temp, 0, Qe, 0, v3, 0);
+                float cost3 = MatrixHelper.dotProduct(v3, temp);
+                if (cost3 < cost) {
+                    cost = cost3;
+                    newPosition = v3;
+                }
+            }
+            return cost;
+        }
+
         @Override
         public String toString() {
             StringBuilder stringBuilder = new StringBuilder();
@@ -273,7 +347,7 @@ public class ObjectModel {
 
         public final int[] verticesIndex = new int[3];
         public final Vector normal;      // 面的单位法向量
-        public final float[] K;          // fundamental error quadric
+        public float[] K;          // fundamental error quadric
 
 
         public Face(int vIndex1, int vIndex2, int vIndex3) {
@@ -282,7 +356,25 @@ public class ObjectModel {
             verticesIndex[2] = vIndex3;
 
             normal = computeNormal();
-            K = computeK();
+        }
+
+        /**
+         * 计算每个面的基础二次方误差矩阵
+         */
+        public void computeK() {
+            // suppose the plane(face) is denoted as p = [a, b, c, d]^T
+            Vertex oneVertex = vertexList.get(verticesIndex[0]);            // 任取面的一个顶点
+            float d = - normal.dotProduct(oneVertex.position);
+            float[] p = new float[]{normal.x, normal.y, normal.z, d};
+
+            // K = p * p^T
+            K = new float[16];
+            for (int i = 0; i < 4; i++) {
+                for (int j = 0; j < 4; j++) {
+                    // 注意，这里为了与OpenGL 兼容，使用列向量的方式组织矩阵
+                    K[i + j * 4] = p[i] * p[j];
+                }
+            }
         }
 
         private Vector computeNormal() {
@@ -291,23 +383,6 @@ public class ObjectModel {
             Vertex p3 = vertexList.get(verticesIndex[2]);
             return Vector.substract(p1.position, p2.position).crossProduct(Vector.substract
                     (p3.position, p2.position)).normalize();
-        }
-
-        private float[] computeK() {
-            // suppose the plane(face) is denoted as p = [a, b, c, d]^T
-            Vertex oneVertex = vertexList.get(verticesIndex[0]);            // 任取面的一个顶点
-            float d = - normal.dotProduct(oneVertex.position);
-            float[] p = new float[]{normal.x, normal.y, normal.z, d};
-
-            // K = p * p^T
-            float[] K = new float[16];
-            for (int i = 0; i < 4; i++) {
-                for (int j = 0; j < 4; j++) {
-                    // 注意，这里为了与OpenGL 兼容，使用列向量的方式组织矩阵
-                    K[i + j * 4] = p[i] * p[j];
-                }
-            }
-            return K;
         }
 
         @Override
