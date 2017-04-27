@@ -2,6 +2,7 @@ package com.example.modelsimplification.objects;
 
 import android.opengl.Matrix;
 
+import com.example.modelsimplification.data.IndexMinPQ;
 import com.example.modelsimplification.data.Vector;
 import com.example.modelsimplification.util.MatrixHelper;
 
@@ -25,7 +26,7 @@ public class ObjectModel {
 
     private final List<Vertex> vertexList = new ArrayList<>();          // 顶点列表
     private final List<Face> faceList = new ArrayList<>();              // 三角面列表
-    private final TreeMap<Float, Integer> permutation = new TreeMap<>();       // 收缩消耗排列
+    private IndexMinPQ<Float> costHeap;                               // 折叠代价的优先队列
 
     private String basePath;                                      // 基准路径
 
@@ -72,6 +73,12 @@ public class ObjectModel {
 
         readFile(st);
         return this;
+    }
+
+    public void simplifiedTo(int vertexNum) {
+        computeAllCost();
+
+        int vIndex = costHeap.delMin();
     }
 
     /**
@@ -186,11 +193,6 @@ public class ObjectModel {
             }
         }
         st.skipToNextLine();
-
-//        if (BuildConfig.DEBUG) {
-////            Log.d(TAG, "readFace: " + faceList.get(faceIndex));
-//            System.out.println("readFace: " + faceList.get(faceIndex));
-//        }
     } // End of readFace
 
     /**
@@ -230,9 +232,28 @@ public class ObjectModel {
         for (Vertex v : vertexList) {
             v.computeQ();
         }
-        for (Vertex v : vertexList) {
+        for (int i = 0; i < vertexList.size(); i++) {
+            Vertex v = vertexList.get(i);
             v.computeCostAndCandidate();
-            permutation.put(v.cost, v.candidateIndex);
+            costHeap.insert(i, v.cost);
+        }
+    }
+
+    private void collapse(int vIndex) {
+        // 待收缩的两个点
+        Vertex v0 = vertexList.get(vIndex);
+        Vertex v1 = vertexList.get(v0.candidateIndex);
+
+        // 获取v0相邻的面的列表，不包括与v1共有的面
+        List<Face> fList_0 = new ArrayList<>();
+        for (int fIndex : v0.adjacentFacesIndex) {
+            Face f = faceList.get(fIndex);
+            if (f.hasVertex(v0.candidateIndex)) {
+                // 删除与v1共有的面
+                faceList.remove(fIndex);
+            } else {
+                fList_0.add(faceList.get(fIndex));
+            }
         }
     }
 
@@ -247,8 +268,8 @@ public class ObjectModel {
         public float[] bestPosition;        // 代价最小的收缩顶点的位置
         public float cost;              // 最小收缩代价
 
-        private List<Integer> adjacentVerticesIndex = new ArrayList<>();         // 相邻顶点的索引
-        private List<Integer> adjacentFacesIndex = new ArrayList<>();            // 相邻面的索引
+        public List<Integer> adjacentVerticesIndex = new ArrayList<>();         // 相邻顶点的索引
+        public List<Integer> adjacentFacesIndex = new ArrayList<>();            // 相邻面的索引
 
         public Vertex() {
             position = new Vector();
@@ -395,6 +416,15 @@ public class ObjectModel {
             verticesIndex[2] = vIndex3;
 
             normal = computeNormal();
+        }
+
+        public boolean hasVertex(int vIndex) {
+            for (int i : verticesIndex) {
+                if (i == vIndex) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         /**

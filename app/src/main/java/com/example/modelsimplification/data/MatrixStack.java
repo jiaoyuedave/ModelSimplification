@@ -7,7 +7,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 
 /**
- * Created by Administrator on 2017/4/24.
+ * 使用可变长二维数组实现矩阵栈
+ *
+ * Created by Jiao Yue on 2017/4/24.
  */
 
 public class MatrixStack {
@@ -48,6 +50,10 @@ public class MatrixStack {
     }
 
 
+    /**
+     * 单元测试代码
+     * @param args
+     */
     public static final void main(String[] args) {
         try {
             MatrixStack stack = new MatrixStack();
