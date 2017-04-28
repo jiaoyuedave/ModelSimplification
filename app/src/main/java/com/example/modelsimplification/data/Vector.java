@@ -17,6 +17,12 @@ public class Vector {
 
     public Vector(){}
 
+    public Vector(float[] a) {
+        x = a[0];
+        y = a[1];
+        z = a[2];
+    }
+
     public Vector(float x, float y, float z) {
         this.x = x;
         this.y = y;

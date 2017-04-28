@@ -244,16 +244,41 @@ public class ObjectModel {
         Vertex v0 = vertexList.get(vIndex);
         Vertex v1 = vertexList.get(v0.candidateIndex);
 
-        // 获取v0相邻的面的列表，不包括与v1共有的面
-        List<Face> fList_0 = new ArrayList<>();
+        // 获取v0相邻的面列表，删除共有的面
+        List<Integer> fIndices0 = new ArrayList<>();
         for (int fIndex : v0.adjacentFacesIndex) {
             Face f = faceList.get(fIndex);
             if (f.hasVertex(v0.candidateIndex)) {
-                // 删除与v1共有的面
-                faceList.remove(fIndex);
+                // 删除共有的面，不适用remove() 方法是因为不能改变列表的索引
+                faceList.set(fIndex, null);
             } else {
-                fList_0.add(faceList.get(fIndex));
+                fIndices0.add(fIndex);
             }
+        }
+
+        // 获取v1相邻的面的列表，不包括共有的面
+        List<Integer> fIndices1 = new ArrayList<>();
+        for (int fIndex : v1.adjacentFacesIndex) {
+            Face f = faceList.get(fIndex);
+            if (!f.hasVertex(vIndex)) {
+                fIndices1.add(fIndex);
+            }
+        }
+
+        // 获取新顶点，为了缩减队列的长度，将新顶点放在原顶点v0的位置，删除v1（置为null）
+        vertexList.set(vIndex, new Vertex(v0.bestPosition));
+        vertexList.set(v0.candidateIndex, null);
+
+        // 更新其余面的顶点
+        for (int fIndex : fIndices0) {
+            Face f = faceList.get(fIndex);
+//            f.replaceVertex(vIndex, vIndex);
+            f.update();
+        }
+        for (int fIndex : fIndices1) {
+            Face f = faceList.get(fIndex);
+            f.replaceVertex(v0.candidateIndex, vIndex);
+            f.update();
         }
     }
 
@@ -273,6 +298,10 @@ public class ObjectModel {
 
         public Vertex() {
             position = new Vector();
+        }
+
+        public Vertex(float[] a) {
+            position = new Vector(a);
         }
 
         public Vertex(float x, float y, float z) {
@@ -406,7 +435,7 @@ public class ObjectModel {
     private class Face {
 
         public final int[] verticesIndex = new int[3];
-        public final Vector normal;      // 面的单位法向量
+        public Vector normal;      // 面的单位法向量
         public float[] K;          // fundamental error quadric
 
 
@@ -425,6 +454,24 @@ public class ObjectModel {
                 }
             }
             return false;
+        }
+
+        public boolean replaceVertex(int oldIndex, int newIndex) {
+            for (int i = 0; i < 3; i++) {
+                if (verticesIndex[i] == oldIndex) {
+                    verticesIndex[i] = newIndex;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /**
+         * 更新法向量及二次方误差矩阵，当面的顶点改变时需调用此方法
+         */
+        public void update() {
+            normal = computeNormal();
+            computeK();;
         }
 
         /**
