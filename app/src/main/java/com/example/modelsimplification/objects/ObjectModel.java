@@ -12,9 +12,9 @@ import java.io.FileReader;
 import java.io.Reader;
 import java.io.StreamTokenizer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.TreeMap;
+import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Created by Administrator on 2017/4/14.
@@ -244,41 +244,57 @@ public class ObjectModel {
         Vertex v0 = vertexList.get(vIndex);
         Vertex v1 = vertexList.get(v0.candidateIndex);
 
-        // 获取v0相邻的面列表，删除共有的面
-        List<Integer> fIndices0 = new ArrayList<>();
-        for (int fIndex : v0.adjacentFacesIndex) {
-            Face f = faceList.get(fIndex);
-            if (f.hasVertex(v0.candidateIndex)) {
+        // 待收缩的两个点的索引
+        final int v0Index = vIndex;
+        final int v1Index = v0.candidateIndex;
+
+        // 获取v0,v1相邻的面列表，并删除共有的面
+        List<Integer> fIndices = new ArrayList<>();
+        for (int vfIndex : v0.adjacentFacesIndex) {
+            Face f = faceList.get(vfIndex);
+            if (f.hasVertex(v1Index)) {
                 // 删除共有的面，不适用remove() 方法是因为不能改变列表的索引
-                faceList.set(fIndex, null);
+                faceList.set(vfIndex, null);
             } else {
-                fIndices0.add(fIndex);
+                fIndices.add(vfIndex);
+            }
+        }
+        for (int fIndex : v1.adjacentFacesIndex) {
+            Face f = faceList.get(fIndex);
+            if (!f.hasVertex(v0Index)) {
+                fIndices.add(fIndex);
             }
         }
 
-        // 获取v1相邻的面的列表，不包括共有的面
-        List<Integer> fIndices1 = new ArrayList<>();
-        for (int fIndex : v1.adjacentFacesIndex) {
-            Face f = faceList.get(fIndex);
-            if (!f.hasVertex(vIndex)) {
-                fIndices1.add(fIndex);
+        // 获取v0,v1相邻的顶点列表，不包括v0和v1
+        Set<Integer> vIndices = new TreeSet<>();
+        for (int vvIndex : v0.adjacentVerticesIndex) {
+            if (vvIndex != v1Index) {
+                vIndices.add(vvIndex);
+            }
+        }
+        for (int vvIndex : v1.adjacentVerticesIndex) {
+            if (vvIndex != v0Index) {
+                vIndices.add(vvIndex);
             }
         }
 
         // 获取新顶点，为了缩减队列的长度，将新顶点放在原顶点v0的位置，删除v1（置为null）
-        vertexList.set(vIndex, new Vertex(v0.bestPosition));
+        Vertex newVertex = new Vertex(v0.bestPosition);
+        vertexList.set(vIndex, newVertex);
         vertexList.set(v0.candidateIndex, null);
 
-        // 更新其余面的顶点
-        for (int fIndex : fIndices0) {
-            Face f = faceList.get(fIndex);
-//            f.replaceVertex(vIndex, vIndex);
-            f.update();
+        // 更新相邻的面
+        for (int i : fIndices) {
+            Face f = faceList.get(i);
+            f.replaceVertex(v1Index, v0Index);     // 只有v1相邻的面需要更新顶点位置
+            f.update();                            // 所有的面都需要更新法向量和基础二次方误差矩阵
         }
-        for (int fIndex : fIndices1) {
-            Face f = faceList.get(fIndex);
-            f.replaceVertex(v0.candidateIndex, vIndex);
-            f.update();
+
+        // 更新相邻的顶点
+        for (int i : vIndices) {
+            Vertex v = vertexList.get(i);
+
         }
     }
 
@@ -293,6 +309,7 @@ public class ObjectModel {
         public float[] bestPosition;        // 代价最小的收缩顶点的位置
         public float cost;              // 最小收缩代价
 
+        // 为了减少程序的复杂性，加快简化速度，不允许相邻点和相邻面的列表中出现空元素，以牺牲空间为代价
         public List<Integer> adjacentVerticesIndex = new ArrayList<>();         // 相邻顶点的索引
         public List<Integer> adjacentFacesIndex = new ArrayList<>();            // 相邻面的索引
 
@@ -324,6 +341,10 @@ public class ObjectModel {
 
         public void addFace(int faceIndex) {
             adjacentFacesIndex.add(faceIndex);
+        }
+
+        public void replcaeNeighbor(int oldIndex, int newIndex) {
+
         }
 
         /**
@@ -471,7 +492,7 @@ public class ObjectModel {
          */
         public void update() {
             normal = computeNormal();
-            computeK();;
+            computeK();
         }
 
         /**
