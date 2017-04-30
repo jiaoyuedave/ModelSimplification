@@ -1,9 +1,11 @@
 package com.example.modelsimplification.objects;
 
 import android.opengl.Matrix;
+import android.util.Log;
 
 import com.example.modelsimplification.data.IndexMinPQ;
 import com.example.modelsimplification.data.Vector;
+import com.example.modelsimplification.util.LoggerConfig;
 import com.example.modelsimplification.util.MatrixHelper;
 
 import java.io.BufferedReader;
@@ -12,6 +14,7 @@ import java.io.FileReader;
 import java.io.Reader;
 import java.io.StreamTokenizer;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -27,6 +30,7 @@ public class ObjectModel {
     private final List<Vertex> vertexList = new ArrayList<>();          // 顶点列表
     private final List<Face> faceList = new ArrayList<>();              // 三角面列表
     private IndexMinPQ<Float> costHeap;                               // 折叠代价的优先队列
+    private int vN;                                                   // 模型中顶点的数目
 
     private String basePath;                                      // 基准路径
 
@@ -48,7 +52,6 @@ public class ObjectModel {
 
     /**
      * 从.obj 文件加载三维模型，适用于PC端
-     *
      * @param fileName 文件路径
      * @return this
      * @throws FileNotFoundException
@@ -62,7 +65,6 @@ public class ObjectModel {
 
     /**
      * 从输入流读取三维模型，android端使用此方法
-     *
      * @param reader 输入流
      * @return this
      * @throws FileNotFoundException
@@ -72,18 +74,20 @@ public class ObjectModel {
         ObjectFileParser st = new ObjectFileParser(reader);
 
         readFile(st);
+        vN = vertexList.size();
         return this;
     }
 
     public void simplifiedTo(int vertexNum) {
+        costHeap = new IndexMinPQ<>(vertexList.size());
         computeAllCost();
 
         int vIndex = costHeap.delMin();
+        collapse(vIndex);
     }
 
     /**
      * 生成LoadedObject 对象，用于绘制OpenGL 图形
-     *
      * @return LoadedObject 对象
      */
     public LoadedObject toLoadedObject() {
@@ -112,7 +116,6 @@ public class ObjectModel {
 
     /**
      * 读取文件
-     *
      * @param st 解析器对象
      * @throws ParsingErrorException
      */
@@ -140,7 +143,6 @@ public class ObjectModel {
 
     /**
      * 读取顶点
-     *
      * @param st 解析器对象
      * @throws ParsingErrorException
      */
@@ -183,13 +185,13 @@ public class ObjectModel {
 
         for (int i = 0; i < points.size(); i++) {
             Vertex vertex1 = vertexList.get(points.get(i));
-            vertex1.addFace(faceIndex);
+            vertex1.adjacentFacesIndex.add(faceIndex);
             vertex1.normal = face.normal;
 
             for (int j = i + 1; j < points.size(); j++) {
                 Vertex vertex2 = vertexList.get(points.get(j));
-                vertex1.addNeighbor(points.get(j));
-                vertex2.addNeighbor(points.get(i));
+                vertex1.adjacentVerticesIndex.add(points.get(j));
+                vertex2.adjacentVerticesIndex.add(points.get(i));
             }
         }
         st.skipToNextLine();
@@ -197,7 +199,6 @@ public class ObjectModel {
 
     /**
      * 设置基本路径
-     *
      * @param pathName 路径名
      */
     private void setBasePath(String pathName) {
@@ -213,8 +214,7 @@ public class ObjectModel {
 
     /**
      * 设置包含文件名的文件路径
-     *
-     * @param fileName 文件名
+     *d @param fileName 文件名
      */
     private void setBasePathFromFilename(String fileName) {
         if (fileName.lastIndexOf(java.io.File.separator) == -1) {
@@ -255,6 +255,14 @@ public class ObjectModel {
             if (f.hasVertex(v1Index)) {
                 // 删除共有的面，不适用remove() 方法是因为不能改变列表的索引
                 faceList.set(vfIndex, null);
+
+                // 更新另外一个顶点的面索引
+                for (int i : f.verticesIndex) {
+                    if (i != v0Index && i != v1Index) {
+                        Vertex v = vertexList.get(i);
+                        v.adjacentFacesIndex.remove(vfIndex);
+                    }
+                }
             } else {
                 fIndices.add(vfIndex);
             }
@@ -267,35 +275,45 @@ public class ObjectModel {
         }
 
         // 获取v0,v1相邻的顶点列表，不包括v0和v1
-        Set<Integer> vIndices = new TreeSet<>();
-        for (int vvIndex : v0.adjacentVerticesIndex) {
-            if (vvIndex != v1Index) {
-                vIndices.add(vvIndex);
-            }
-        }
-        for (int vvIndex : v1.adjacentVerticesIndex) {
-            if (vvIndex != v0Index) {
-                vIndices.add(vvIndex);
-            }
-        }
+        Set<Integer> vIndices = new HashSet<>();
+        vIndices.addAll(v0.adjacentVerticesIndex);
+        vIndices.addAll(v1.adjacentVerticesIndex);
+        vIndices.remove(v0Index);
+        vIndices.remove(v1Index);
 
         // 获取新顶点，为了缩减队列的长度，将新顶点放在原顶点v0的位置，删除v1（置为null）
         Vertex newVertex = new Vertex(v0.bestPosition);
-        vertexList.set(vIndex, newVertex);
-        vertexList.set(v0.candidateIndex, null);
+        vertexList.set(v0Index, newVertex);
+        vertexList.set(v1Index, null);
 
         // 更新相邻的面
         for (int i : fIndices) {
             Face f = faceList.get(i);
             f.replaceVertex(v1Index, v0Index);     // 只有v1相邻的面需要更新顶点位置
             f.update();                            // 所有的面都需要更新法向量和基础二次方误差矩阵
+            newVertex.adjacentFacesIndex.add(i);
         }
 
         // 更新相邻的顶点
         for (int i : vIndices) {
             Vertex v = vertexList.get(i);
-
+            v.adjacentVerticesIndex.remove(v1Index);
+            v.adjacentVerticesIndex.add(v0Index);
+            newVertex.adjacentVerticesIndex.add(i);
         }
+
+        // 重新计算相关顶点的二次误差矩阵和消耗
+        for (int i : vIndices) {
+            vertexList.get(i).computeQ();
+        }
+        newVertex.computeQ();
+        for (int i : vIndices) {
+            vertexList.get(i).computeCostAndCandidate();
+        }
+        newVertex.computeCostAndCandidate();
+
+        // 顶点数量减1
+        vN = vN - 1;
     }
 
 
@@ -309,9 +327,9 @@ public class ObjectModel {
         public float[] bestPosition;        // 代价最小的收缩顶点的位置
         public float cost;              // 最小收缩代价
 
-        // 为了减少程序的复杂性，加快简化速度，不允许相邻点和相邻面的列表中出现空元素，以牺牲空间为代价
-        public List<Integer> adjacentVerticesIndex = new ArrayList<>();         // 相邻顶点的索引
-        public List<Integer> adjacentFacesIndex = new ArrayList<>();            // 相邻面的索引
+        // 为了减少程序的复杂性，加快简化速度，不允许相邻点和相邻面的列表中出现重复或者无效的元素索引，牺牲空间为代价
+        public Set<Integer> adjacentVerticesIndex = new HashSet<>();         // 相邻顶点的索引
+        public Set<Integer> adjacentFacesIndex = new HashSet<>();            // 相邻面的索引
 
         public Vertex() {
             position = new Vector();
@@ -321,31 +339,19 @@ public class ObjectModel {
             position = new Vector(a);
         }
 
-        public Vertex(float x, float y, float z) {
-            position = new Vector();
-            position.x = x;
-            position.y = y;
-            position.z = z;
-        }
-
-        public Vertex(Vector v) {
-            if (v == null) {
-                throw new NullPointerException();
-            }
-            position = v;
-        }
-
-        public void addNeighbor(int vertexIndex) {
-            adjacentVerticesIndex.add(vertexIndex);
-        }
-
-        public void addFace(int faceIndex) {
-            adjacentFacesIndex.add(faceIndex);
-        }
-
-        public void replcaeNeighbor(int oldIndex, int newIndex) {
-
-        }
+//        public Vertex(float x, float y, float z) {
+//            position = new Vector();
+//            position.x = x;
+//            position.y = y;
+//            position.z = z;
+//        }
+//
+//        public Vertex(Vector v) {
+//            if (v == null) {
+//                throw new NullPointerException();
+//            }
+//            position = v;
+//        }
 
         /**
          * 计算每个顶点的二次方误差矩阵，必须先调用Face 的computeK() 方法计算面的基础二次方误差矩阵
