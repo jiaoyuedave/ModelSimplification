@@ -82,8 +82,10 @@ public class ObjectModel {
         costHeap = new IndexMinPQ<>(vertexList.size());
         computeAllCost();
 
-        int vIndex = costHeap.delMin();
-        collapse(vIndex);
+        while (vN > vertexNum) {
+            int vIndex = costHeap.delMin();
+            collapse(vIndex);
+        }
     }
 
     /**
@@ -248,6 +250,11 @@ public class ObjectModel {
         final int v0Index = vIndex;
         final int v1Index = v0.candidateIndex;
 
+        // 如果是孤立的点，则直接删除
+        if (v0.cost == 0) {
+            vertexList.set(v0Index, null);
+        }
+
         // 获取v0,v1相邻的面列表，并删除共有的面
         List<Integer> fIndices = new ArrayList<>();
         for (int vfIndex : v0.adjacentFacesIndex) {
@@ -308,9 +315,13 @@ public class ObjectModel {
         }
         newVertex.computeQ();
         for (int i : vIndices) {
-            vertexList.get(i).computeCostAndCandidate();
+            Vertex v = vertexList.get(i);
+            v.computeCostAndCandidate();
+            costHeap.change(i, v.cost);
         }
         newVertex.computeCostAndCandidate();
+        costHeap.change(v0Index, newVertex.cost);
+        costHeap.delete(v1Index);
 
         // 顶点数量减1
         vN = vN - 1;

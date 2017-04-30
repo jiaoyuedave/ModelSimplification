@@ -57,6 +57,9 @@ public class IndexMinPQ<Key extends Comparable<Key>> {
      * @param key
      */
     public void insert(int k, Key key) {
+        if (contains(k)) {
+            throw new RuntimeException();
+        }
         N++;
         qp[k] = N;
         pq[N] = k;
@@ -99,6 +102,9 @@ public class IndexMinPQ<Key extends Comparable<Key>> {
      * @param key
      */
     public void change(int k, Key key) {
+        if (!contains(k)) {
+            throw new RuntimeException();
+        }
         keys[k] = key;
         swim(qp[k]);
         sink(qp[k]);
