@@ -31,6 +31,7 @@ public class ObjectModel {
     private final List<Face> faceList = new ArrayList<>();              // 三角面列表
     private IndexMinPQ<Float> costHeap;                               // 折叠代价的优先队列
     private int vN;                                                   // 模型中顶点的数目
+    private int fN;                                                   // 模型中三角面的数目
 
     private String basePath;                                      // 基准路径
 
@@ -74,7 +75,13 @@ public class ObjectModel {
         ObjectFileParser st = new ObjectFileParser(reader);
 
         readFile(st);
+
+        // 读完所有的面后才能计算顶点的法向量
+        for (Vertex v : vertexList) {
+            v.computeNormal();
+        }
         vN = vertexList.size();
+        fN = faceList.size();
         return this;
     }
 
@@ -93,24 +100,39 @@ public class ObjectModel {
      * @return LoadedObject 对象
      */
     public LoadedObject toLoadedObject() {
-        float[] vertexArray = new float[vertexList.size() * 3];
-        float[] normalArray = new float[vertexList.size() * 3];
-        for (int i = 0; i < vertexList.size(); i++) {
+        int[] tempArray = new int[vertexList.size()];         // 用来记录顶点索引位置的数组
+        float[] vertexArray = new float[vN * 3];
+        float[] normalArray = new float[vN * 3];
+        for (int i = 0, j = 0; i < vertexList.size(); i++) {
             Vertex vertex = vertexList.get(i);
-            vertexArray[i * 3] = vertex.position.x;
-            vertexArray[i * 3 + 1] = vertex.position.y;
-            vertexArray[i * 3 + 2] = vertex.position.z;
+            if (vertex == null) {
+                tempArray[i] = -1;
+                continue;
+            }
+            tempArray[i] = j;
 
-            normalArray[i * 3] = vertex.normal.x;
-            normalArray[i * 3 + 1] = vertex.normal.y;
-            normalArray[i * 3 + 2] = vertex.normal.z;
+            vertexArray[j * 3] = vertex.position.x;
+            vertexArray[j * 3 + 1] = vertex.position.y;
+            vertexArray[j * 3 + 2] = vertex.position.z;
+
+            normalArray[j * 3] = vertex.normal.x;
+            normalArray[j * 3 + 1] = vertex.normal.y;
+            normalArray[j * 3 + 2] = vertex.normal.z;
+
+            j++;
         }
 
-        int[] indexArray = new int[faceList.size() * 3];
-        for (int i = 0; i < faceList.size(); i++) {
-            indexArray[i * 3] = faceList.get(i).verticesIndex[0];
-            indexArray[i * 3 + 1] = faceList.get(i).verticesIndex[1];
-            indexArray[i * 3 + 2] = faceList.get(i).verticesIndex[2];
+        int[] indexArray = new int[fN * 3];
+        for (int i = 0, j = 0; i < faceList.size(); i++) {
+            Face face = faceList.get(i);
+            if (face == null) {
+                continue;
+            }
+
+            indexArray[j * 3] = tempArray[face.verticesIndex[0]];
+            indexArray[j * 3 + 1] = tempArray[face.verticesIndex[1]];
+            indexArray[j * 3 + 2] = tempArray[face.verticesIndex[2]];
+            j++;
         }
 
         return new LoadedObject(vertexArray, normalArray, indexArray);
@@ -185,10 +207,11 @@ public class ObjectModel {
         faceList.add(face);
         int faceIndex = faceList.size() - 1;
 
+        // 读取面的同时，完善相关顶点的属性
         for (int i = 0; i < points.size(); i++) {
             Vertex vertex1 = vertexList.get(points.get(i));
             vertex1.adjacentFacesIndex.add(faceIndex);
-            vertex1.normal = face.normal;
+//            vertex1.normal = face.normal;
 
             for (int j = i + 1; j < points.size(); j++) {
                 Vertex vertex2 = vertexList.get(points.get(j));
@@ -256,12 +279,15 @@ public class ObjectModel {
         }
 
         // 获取v0,v1相邻的面列表，并删除共有的面
-        List<Integer> fIndices = new ArrayList<>();
+        Set<Integer> fIndices = new HashSet<>();
+        fIndices.addAll(v0.adjacentFacesIndex);
+        fIndices.addAll(v1.adjacentFacesIndex);
         for (int vfIndex : v0.adjacentFacesIndex) {
             Face f = faceList.get(vfIndex);
             if (f.hasVertex(v1Index)) {
-                // 删除共有的面，不适用remove() 方法是因为不能改变列表的索引
+                // 删除共有的面，不使用remove() 方法是因为不能改变列表的索引
                 faceList.set(vfIndex, null);
+                fIndices.remove(vfIndex);
 
                 // 更新另外一个顶点的面索引
                 for (int i : f.verticesIndex) {
@@ -270,14 +296,6 @@ public class ObjectModel {
                         v.adjacentFacesIndex.remove(vfIndex);
                     }
                 }
-            } else {
-                fIndices.add(vfIndex);
-            }
-        }
-        for (int fIndex : v1.adjacentFacesIndex) {
-            Face f = faceList.get(fIndex);
-            if (!f.hasVertex(v0Index)) {
-                fIndices.add(fIndex);
             }
         }
 
@@ -309,10 +327,12 @@ public class ObjectModel {
             newVertex.adjacentVerticesIndex.add(i);
         }
 
-        // 重新计算相关顶点的二次误差矩阵和消耗
+        // 重新计算相关顶点的法向量、二次误差矩阵和消耗
         for (int i : vIndices) {
+            vertexList.get(i).computeNormal();
             vertexList.get(i).computeQ();
         }
+        newVertex.computeNormal();
         newVertex.computeQ();
         for (int i : vIndices) {
             Vertex v = vertexList.get(i);
@@ -320,11 +340,13 @@ public class ObjectModel {
             costHeap.change(i, v.cost);
         }
         newVertex.computeCostAndCandidate();
-        costHeap.change(v0Index, newVertex.cost);
+        costHeap.insert(v0Index, newVertex.cost);
         costHeap.delete(v1Index);
 
         // 顶点数量减1
         vN = vN - 1;
+        // 三角面数量减2
+        fN = fN - 2;
     }
 
 
@@ -363,6 +385,23 @@ public class ObjectModel {
 //            }
 //            position = v;
 //        }
+
+        /**
+         * 使用平均向量法计算顶点的法向量
+         */
+        public void computeNormal() {
+            float[] sum = new float[]{0, 0, 0};
+            for (int fIndex : adjacentFacesIndex) {
+                Face f = faceList.get(fIndex);
+                sum[0] += f.normal.x;
+                sum[1] += f.normal.y;
+                sum[2] += f.normal.z;
+            }
+            sum[0] /= adjacentFacesIndex.size();
+            sum[1] /= adjacentFacesIndex.size();
+            sum[2] /= adjacentFacesIndex.size();
+            normal = new Vector(sum);
+        }
 
         /**
          * 计算每个顶点的二次方误差矩阵，必须先调用Face 的computeK() 方法计算面的基础二次方误差矩阵
@@ -546,6 +585,10 @@ public class ObjectModel {
     }
 
 
+    /**
+     * 单元测试代码
+     * @param args
+     */
     public static final void main(String[] args) {
         String filename = "C:\\Users\\Administrator\\Desktop\\dinosaur.2k.obj";
         ObjectModel om = new ObjectModel(filename);

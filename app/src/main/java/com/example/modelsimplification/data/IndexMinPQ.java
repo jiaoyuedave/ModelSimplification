@@ -115,6 +115,9 @@ public class IndexMinPQ<Key extends Comparable<Key>> {
      * @param k
      */
     public void delete(int k) {
+        if (!contains(k)) {
+            throw new RuntimeException();
+        }
         int index = qp[k];
         exch(index, N--);
         swim(index);
