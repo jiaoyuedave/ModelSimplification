@@ -54,7 +54,7 @@ public class SceneRenderer implements GLSurfaceView.Renderer {
             InputStream in = mContext.getAssets().open("dinosaur.2k.obj");
             Reader reader = new BufferedReader(new InputStreamReader(in));
             ObjectModel objectModel = new ObjectModel(reader);
-            objectModel.simplifiedTo(1900);
+            objectModel.simplifiedTo(500);
             loadedObject = objectModel.toLoadedObject();
         } catch (IOException e) {
             e.printStackTrace();

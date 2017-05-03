@@ -187,7 +187,7 @@ public class IndexMinPQ<Key extends Comparable<Key>> {
      */
     public static final void main(String[] args) {
         IndexMinPQ<String> pq = new IndexMinPQ<>(10);
-        pq.insert(1, "b");
+        pq.insert(0, "b");
         pq.insert(2, "a");
         pq.insert(3, "c");
         pq.insert(4, "f");

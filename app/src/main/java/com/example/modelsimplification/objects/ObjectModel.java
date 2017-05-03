@@ -3,6 +3,7 @@ package com.example.modelsimplification.objects;
 import android.opengl.Matrix;
 import android.util.Log;
 
+import com.example.modelsimplification.BuildConfig;
 import com.example.modelsimplification.data.IndexMinPQ;
 import com.example.modelsimplification.data.Vector;
 import com.example.modelsimplification.util.LoggerConfig;
@@ -14,10 +15,10 @@ import java.io.FileReader;
 import java.io.Reader;
 import java.io.StreamTokenizer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.TreeSet;
 
 /**
  * Created by Administrator on 2017/4/14.
@@ -90,6 +91,9 @@ public class ObjectModel {
         computeAllCost();
 
         while (vN > vertexNum) {
+            if (BuildConfig.DEBUG && LoggerConfig.ANDROID_DEBUG) {
+                Log.d(TAG, "vertex index:" + costHeap.minIndex() + "\t" + "cost:" + costHeap.min());
+            }
             int vIndex = costHeap.delMin();
             collapse(vIndex);
         }
@@ -276,6 +280,8 @@ public class ObjectModel {
         // 如果是孤立的点，则直接删除
         if (v0.cost == 0) {
             vertexList.set(v0Index, null);
+            costHeap.delete(v0Index);
+            return;
         }
 
         // 获取v0,v1相邻的面列表，并删除共有的面
@@ -444,11 +450,12 @@ public class ObjectModel {
                 Qe[i] = this.Q[i] + v.Q[i];
             }
 
-            Qe[3] = Qe[7] = Qe[11] = 0;
-            Qe[15] = 1;
+            float[] t = Arrays.copyOf(Qe, Qe.length);
+            t[3] = t[7] = t[11] = 0;
+            t[15] = 1;
             float[] Qe_v = new float[16];
             float cost = Float.MAX_VALUE;
-            if (Matrix.invertM(Qe_v, 0, Qe, 0)) {
+            if (Matrix.invertM(Qe_v, 0, t, 0)) {
                 // 计算新顶点的位置
                 Matrix.multiplyMV(newPosition, 0, Qe_v, 0, new float[]{0, 0, 0, 1}, 0);
 
@@ -489,6 +496,40 @@ public class ObjectModel {
                     System.arraycopy(v3, 0, newPosition, 0, 4);
                 }
             }
+
+/*            // 矩阵不可逆，则选择收缩点在两个端点或者中点
+            // 收缩点选在此端点
+            float[] v1 = this.position.toFloatArray();
+            float[] temp = new float[4];
+            Matrix.multiplyMV(temp, 0, Qe, 0, v1, 0);
+            float cost1 = MatrixHelper.dotProduct(v1, temp);
+            if (cost1 < cost) {
+                cost = cost1;
+                System.arraycopy(v1, 0, newPosition, 0, 4);
+            }
+
+            // 收缩点为另一端点
+            float[] v2 = v.position.toFloatArray();
+            Matrix.multiplyMV(temp, 0, Qe, 0, v2, 0);
+            float cost2 = MatrixHelper.dotProduct(v2, temp);
+            if (cost2 < cost) {
+                cost = cost2;
+                System.arraycopy(v2, 0, newPosition, 0, 4);
+            }
+
+            // 收缩点为中点
+            float[] v3 = new float[]{
+                    (this.position.x + v.position.x) / 2,
+                    (this.position.y + v.position.y) / 2,
+                    (this.position.z + v.position.z) / 2,
+                    1};
+            Matrix.multiplyMV(temp, 0, Qe, 0, v3, 0);
+            float cost3 = MatrixHelper.dotProduct(v3, temp);
+            if (cost3 < cost) {
+                cost = cost3;
+                System.arraycopy(v3, 0, newPosition, 0, 4);
+            }*/
+
             return cost;
         }
 
