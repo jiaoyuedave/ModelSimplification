@@ -3,7 +3,7 @@ package com.example.modelsimplification;
 import android.content.Context;
 import android.opengl.GLSurfaceView;
 
-import com.example.modelsimplification.objects.LoadedObject;
+import com.example.modelsimplification.objects.IndexedGLObject;
 import com.example.modelsimplification.objects.ObjectModel;
 import com.example.modelsimplification.programs.LoadedObjectShaderProgram;
 
@@ -35,7 +35,7 @@ public class SceneRenderer implements GLSurfaceView.Renderer {
 
     private LoadedObjectShaderProgram loProgram;
 
-    private LoadedObject loadedObject;
+    private IndexedGLObject indexedGLObject;
 
     public SceneRenderer(Context context) {
         mContext = context;
@@ -54,16 +54,16 @@ public class SceneRenderer implements GLSurfaceView.Renderer {
             InputStream in = mContext.getAssets().open("dinosaur.2k.obj");
             Reader reader = new BufferedReader(new InputStreamReader(in));
             ObjectModel objectModel = new ObjectModel(reader);
-            objectModel.simplifiedTo(500);
-            loadedObject = objectModel.toLoadedObject();
+            objectModel.simplifiedTo(2000);
+            indexedGLObject = objectModel.toIndexedGLObject();
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        loadedObject.bindProgram(loProgram);
-        loadedObject.rotate(90, 0, 0, 1);
-        loadedObject.rotate(90, 0, 1, 0);
-        loadedObject.setColor(0.9f, 0.9f, 0.9f, 1f);
+        indexedGLObject.bindProgram(loProgram);
+        indexedGLObject.rotate(90, 0, 0, 1);
+        indexedGLObject.rotate(90, 0, 1, 0);
+        indexedGLObject.setColor(0.9f, 0.9f, 0.9f, 1f);
     }
 
     @Override
@@ -80,7 +80,7 @@ public class SceneRenderer implements GLSurfaceView.Renderer {
     public void onDrawFrame(GL10 gl) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        loadedObject.draw();
+        indexedGLObject.draw();
     }
 
     public void handleTouchDrag(float deltaX, float deltaY) {

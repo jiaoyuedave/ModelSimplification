@@ -100,10 +100,10 @@ public class ObjectModel {
     }
 
     /**
-     * 生成LoadedObject 对象，用于绘制OpenGL 图形
-     * @return LoadedObject 对象
+     * 生成IndexedGLObject 对象，用于绘制OpenGL 图形
+     * @return IndexedGLObject 对象
      */
-    public LoadedObject toLoadedObject() {
+    public IndexedGLObject toIndexedGLObject() {
         int[] tempArray = new int[vertexList.size()];         // 用来记录顶点索引位置的数组
         float[] vertexArray = new float[vN * 3];
         float[] normalArray = new float[vN * 3];
@@ -139,7 +139,7 @@ public class ObjectModel {
             j++;
         }
 
-        return new LoadedObject(vertexArray, normalArray, indexArray);
+        return new IndexedGLObject(vertexArray, normalArray, indexArray);
     }
 
     /**
