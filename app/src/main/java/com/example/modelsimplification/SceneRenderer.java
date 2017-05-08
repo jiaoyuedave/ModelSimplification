@@ -3,6 +3,7 @@ package com.example.modelsimplification;
 import android.content.Context;
 import android.opengl.GLSurfaceView;
 
+import com.example.modelsimplification.objects.GLObject;
 import com.example.modelsimplification.objects.IndexedGLObject;
 import com.example.modelsimplification.objects.ObjectModel;
 import com.example.modelsimplification.programs.LoadedObjectShaderProgram;
@@ -35,7 +36,7 @@ public class SceneRenderer implements GLSurfaceView.Renderer {
 
     private LoadedObjectShaderProgram loProgram;
 
-    private IndexedGLObject indexedGLObject;
+    private GLObject indexedGLObject;
 
     public SceneRenderer(Context context) {
         mContext = context;
@@ -55,7 +56,8 @@ public class SceneRenderer implements GLSurfaceView.Renderer {
             Reader reader = new BufferedReader(new InputStreamReader(in));
             ObjectModel objectModel = new ObjectModel(reader);
             objectModel.simplifiedTo(2000);
-            indexedGLObject = objectModel.toIndexedGLObject();
+//            indexedGLObject = objectModel.toIndexedGLObject();
+            indexedGLObject = objectModel.toGLObject();
         } catch (IOException e) {
             e.printStackTrace();
         }

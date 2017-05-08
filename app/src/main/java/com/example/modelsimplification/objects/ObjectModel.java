@@ -77,7 +77,7 @@ public class ObjectModel {
 
         readFile(st);
 
-        // 读完所有的面后才能计算顶点的法向量
+        // 读完所有的面后才能计算顶点的平均法向量
         for (Vertex v : vertexList) {
             v.computeNormal();
         }
@@ -99,8 +99,45 @@ public class ObjectModel {
         }
     }
 
+    public GLObject toGLObject() {
+        float[] vertexArray = new float[fN * 9];          // 顶点数组
+        float[] normalArray = new float[fN * 9];          // 法向量数组
+        for (int i = 0, j = 0; i < faceList.size(); i++) {
+            Face face = faceList.get(i);
+            if (face == null) {
+                continue;
+            }
+            Vertex vertex1 = vertexList.get(face.verticesIndex[0]);
+            vertexArray[j] = vertex1.position.x;
+            vertexArray[j + 1] = vertex1.position.y;
+            vertexArray[j + 2] = vertex1.position.z;
+            Vertex vertex2 = vertexList.get(face.verticesIndex[1]);
+            vertexArray[j + 3] = vertex2.position.x;
+            vertexArray[j + 4] = vertex2.position.y;
+            vertexArray[j + 5] = vertex2.position.z;
+            Vertex vertex3 = vertexList.get(face.verticesIndex[2]);
+            vertexArray[j + 6] = vertex3.position.x;
+            vertexArray[j + 7] = vertex3.position.y;
+            vertexArray[j + 8] = vertex3.position.z;
+
+            // 这里使用面向量法计算顶点的法向量
+            normalArray[j] = face.normal.x;
+            normalArray[j + 1] = face.normal.y;
+            normalArray[j + 2] = face.normal.z;
+            normalArray[j + 3] = face.normal.x;
+            normalArray[j + 4] = face.normal.y;
+            normalArray[j + 5] = face.normal.z;
+            normalArray[j + 6] = face.normal.x;
+            normalArray[j + 7] = face.normal.y;
+            normalArray[j + 8] = face.normal.z;
+
+            j = j + 9;
+        }
+        return new GLObject(vertexArray, normalArray);
+    }
+
     /**
-     * 生成IndexedGLObject 对象，用于绘制OpenGL 图形
+     * 生成使用索引数组绘制的OpenGL ES 对象，用于绘制OpenGL 图形
      * @return IndexedGLObject 对象
      */
     public IndexedGLObject toIndexedGLObject() {
