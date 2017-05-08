@@ -30,6 +30,7 @@ public class ObjectModel {
 
     private final List<Vertex> vertexList = new ArrayList<>();          // 顶点列表
     private final List<Face> faceList = new ArrayList<>();              // 三角面列表
+    private final List<CollapseRecord> permutation = new ArrayList<>();       // 记录边折叠的顺序
     private IndexMinPQ<Float> costHeap;                               // 折叠代价的优先队列
     private int vN;                                                   // 模型中顶点的数目
     private int fN;                                                   // 模型中三角面的数目
@@ -94,11 +95,28 @@ public class ObjectModel {
             if (BuildConfig.DEBUG && LoggerConfig.ANDROID_DEBUG) {
                 Log.d(TAG, "vertex index:" + costHeap.minIndex() + "\t" + "cost:" + costHeap.min());
             }
+
+            // 取出折叠代价最小的顶点
             int vIndex = costHeap.delMin();
+
+            // 记录折叠的信息，用于恢复
+            CollapseRecord record = new CollapseRecord();
+            record.setOriginalVertex(vIndex);
+
+            // 进行一次边收缩
             collapse(vIndex);
+
+            // 记录新顶点的信息
+            record.setNewVertex(vIndex);
+
+            permutation.add(record);
         }
     }
 
+    /**
+     * 生成使用顶点数组绘制的OpenGL ES 对象，用于绘制OpenGL 图形
+     * @return
+     */
     public GLObject toGLObject() {
         float[] vertexArray = new float[fN * 9];          // 顶点数组
         float[] normalArray = new float[fN * 9];          // 法向量数组
@@ -659,6 +677,27 @@ public class ObjectModel {
         @Override
         public String toString() {
             return "(" + verticesIndex[0] + "," + verticesIndex[1] + "," + verticesIndex[2] + ")";
+        }
+    }
+
+    private class CollapseRecord {
+        public int vIndex1;
+        public Vertex v1;
+        public int vIndex2;
+        public Vertex v2;
+        public int newIndex;
+        public Vertex newVertex;
+
+        public void setOriginalVertex(int vIndex) {
+            vIndex1 = vIndex;
+            v1 = vertexList.get(vIndex1);
+            vIndex2 = v1.candidateIndex;
+            v2 = vertexList.get(vIndex2);
+        }
+
+        public void setNewVertex(int vIndex) {
+            newIndex = vIndex;
+            newVertex = vertexList.get(newIndex);
         }
     }
 

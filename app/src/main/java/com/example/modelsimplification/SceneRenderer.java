@@ -4,7 +4,6 @@ import android.content.Context;
 import android.opengl.GLSurfaceView;
 
 import com.example.modelsimplification.objects.GLObject;
-import com.example.modelsimplification.objects.IndexedGLObject;
 import com.example.modelsimplification.objects.ObjectModel;
 import com.example.modelsimplification.programs.LoadedObjectShaderProgram;
 
@@ -36,7 +35,7 @@ public class SceneRenderer implements GLSurfaceView.Renderer {
 
     private LoadedObjectShaderProgram loProgram;
 
-    private GLObject indexedGLObject;
+    private GLObject loadedObject;
 
     public SceneRenderer(Context context) {
         mContext = context;
@@ -55,17 +54,17 @@ public class SceneRenderer implements GLSurfaceView.Renderer {
             InputStream in = mContext.getAssets().open("dinosaur.2k.obj");
             Reader reader = new BufferedReader(new InputStreamReader(in));
             ObjectModel objectModel = new ObjectModel(reader);
-            objectModel.simplifiedTo(2000);
-//            indexedGLObject = objectModel.toIndexedGLObject();
-            indexedGLObject = objectModel.toGLObject();
+            objectModel.simplifiedTo(500);
+//            loadedObject = objectModel.toIndexedGLObject();
+            loadedObject = objectModel.toGLObject();
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        indexedGLObject.bindProgram(loProgram);
-        indexedGLObject.rotate(90, 0, 0, 1);
-        indexedGLObject.rotate(90, 0, 1, 0);
-        indexedGLObject.setColor(0.9f, 0.9f, 0.9f, 1f);
+        loadedObject.bindProgram(loProgram);
+        loadedObject.rotate(90, 0, 0, 1);
+        loadedObject.rotate(90, 0, 1, 0);
+        loadedObject.setColor(0.9f, 0.9f, 0.9f, 1f);
     }
 
     @Override
@@ -82,7 +81,7 @@ public class SceneRenderer implements GLSurfaceView.Renderer {
     public void onDrawFrame(GL10 gl) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        indexedGLObject.draw();
+        loadedObject.draw();
     }
 
     public void handleTouchDrag(float deltaX, float deltaY) {
