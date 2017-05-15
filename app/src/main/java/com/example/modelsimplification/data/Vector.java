@@ -61,7 +61,7 @@ public class Vector {
         return new Vector(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z);
     }
 
-    public static Vector substract(final Vector v1, final Vector v2) {
+    public static Vector minus(final Vector v1, final Vector v2) {
         return new Vector(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z);
     }
 

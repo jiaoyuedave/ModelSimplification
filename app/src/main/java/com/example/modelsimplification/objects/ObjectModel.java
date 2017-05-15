@@ -26,6 +26,13 @@ import java.util.Set;
 
 public class ObjectModel {
 
+    public static final int MODE_DEFAULT = 0;
+    public static final int MODE_QEM = 0;
+    public static final int MODE_QEM_A = 1;
+    public static final int MODE_QEM_V = 2;
+    public static final int MODE_QEM_N = 4;
+    private int mode = 4;
+
     private static final String TAG = "ObjectModel";
 
     private final List<Vertex> vertexList = new ArrayList<>();          // 顶点列表
@@ -102,6 +109,14 @@ public class ObjectModel {
             // 进行一次边收缩
             collapse(vIndex);
         }
+    }
+
+    public void simplifiedToRatio(float ratio) {
+        if (ratio >= 1 || ratio < 0) {
+            return;
+        }
+
+        simplifiedTo((int) (vN * ratio));
     }
 
     /**
@@ -333,12 +348,12 @@ public class ObjectModel {
         final int v0Index = vIndex;
         final int v1Index = v0.candidateIndex;
 
-        // 如果是孤立的点，则直接删除
-        if (v0.cost == 0) {
-            vertexList.set(v0Index, null);
-            costHeap.delete(v0Index);
-            return;
-        }
+//        // 如果是孤立的点，则直接删除
+//        if (v0.cost == 0) {
+//            vertexList.set(v0Index, null);
+//            costHeap.delete(v0Index);
+//            return;
+//        }
 
         // 获取v0,v1相邻的面列表，并删除共有的面
         Set<Integer> fIndices = new HashSet<>();
@@ -473,8 +488,12 @@ public class ObjectModel {
             Q = new float[16];
             for (int fIndex : adjacentFacesIndex) {
                 Face temp = faceList.get(fIndex);
-                for (int i = 0; i < 16; i++) {
-                    Q[i] += temp.K[i];
+                MatrixHelper.add(Q, Q, temp.K);
+
+                if (mode == MODE_QEM_A) {
+                    MatrixHelper.multiplyK(Q, Q, temp.area);
+                } else if (mode == MODE_QEM_V) {
+                    MatrixHelper.multiplyK(Q, Q, temp.area * temp.area);
                 }
             }
         }
@@ -490,7 +509,7 @@ public class ObjectModel {
             }
             for (int vIndex : adjacentVerticesIndex) {
                 float[] tempPosition = new float[4];
-                float tempCost = computeCostCollapseTo(vertexList.get(vIndex), tempPosition);
+                float tempCost = computeCostCollapseTo(vIndex, tempPosition);
                 if (tempCost < cost) {
                     candidateIndex = vIndex;
                     cost = tempCost;
@@ -499,12 +518,12 @@ public class ObjectModel {
             }
         }
 
-        private float computeCostCollapseTo(Vertex v, float[] newPosition) {
+        private float computeCostCollapseTo(int vIndex, float[] newPosition) {
+            Vertex v = vertexList.get(vIndex);
+
             // Qe = Q1 + Q2
             float[] Qe = new float[16];
-            for (int i = 0; i < 16; i++) {
-                Qe[i] = this.Q[i] + v.Q[i];
-            }
+            MatrixHelper.add(Qe, this.Q, v.Q);
 
             float[] t = Arrays.copyOf(Qe, Qe.length);
             t[3] = t[7] = t[11] = 0;
@@ -553,6 +572,81 @@ public class ObjectModel {
                 }
             }
 
+            if (mode == MODE_QEM_N) {
+                List<Integer> sides = new ArrayList<>();
+                for (int fIndex : this.adjacentFacesIndex) {
+                    if (faceList.get(fIndex).hasVertex(vIndex)) {
+                        sides.add(fIndex);
+                    }
+                }
+                if (sides.size() == 0) {
+                    cost = 0;
+                    return cost;
+                }
+
+                // 保存法向量相差最大的两个面的索引
+                int minIndex = -1;
+                int maxIndex = -1;
+
+                float S = 0;    // 总面积
+
+                float maxcurv = 0;
+                for (int i : this.adjacentFacesIndex) {
+                    Face f1 = faceList.get(i);
+                    S += f1.area;
+                    float mincurv = 1.1f;
+                    for (int j : sides) {
+                        Face f2 = faceList.get(j);
+                        float dotProduct = f1.normal.dotProduct(f2.normal);
+                        float curv = (1 - dotProduct) / 2;
+                        if (curv < mincurv) {
+                            mincurv = curv;
+                            minIndex = j;
+                        }
+                    }
+                    if (mincurv >= maxcurv) {
+                        maxcurv = mincurv;
+                        maxIndex = i;
+                    }
+                }
+                for (int i : v.adjacentFacesIndex) {
+                    Face f1 = faceList.get(i);
+                    S += f1.area;
+                    float mincurv = 1.1f;
+                    for (int j : sides) {
+                        Face f2 = faceList.get(j);
+                        float dotProduct = f1.normal.dotProduct(f2.normal);
+                        float curv = (1 - dotProduct) / 2;
+                        if (curv < mincurv) {
+                            mincurv = curv;
+                            minIndex = j;
+                        }
+                    }
+                    if (mincurv >= maxcurv) {
+                        maxcurv = mincurv;
+                        maxIndex = i;
+                    }
+                }
+
+                // 计算影响因子
+                for (int i : sides) {
+                    S -= faceList.get(i).area;
+                }
+                if (minIndex == -1 || maxIndex == -1) {
+                    Log.e(TAG, "minIndex: " + minIndex + " maxIndex: " + maxIndex + " maxcurv: " + maxcurv);
+                    Log.e(TAG, "this.adjacentFacesIndex: " + this.adjacentFacesIndex.size() + " v" +
+                            ".adjacentFacesIndex: " + v.adjacentFacesIndex.size() + " sides: " +
+                            sides.size());
+                }
+                float alpha = (faceList.get(minIndex).area + faceList.get(maxIndex).area)  * 100 / S;
+
+//                if (BuildConfig.DEBUG && LoggerConfig.ANDROID_DEBUG) {
+//                    Log.d(TAG, "cost: " + cost + " 法向量约束因子: " + alpha * maxcurv);
+//                }
+
+                cost = cost * alpha * maxcurv;
+            }
+
             return cost;
         }
 
@@ -579,13 +673,15 @@ public class ObjectModel {
         public Vector normal;      // 面的单位法向量
         public float[] K;          // fundamental error quadric
 
+        private float area;        // 面积，仅在MODE_QEM_A 模式下有效
+
 
         public Face(int vIndex1, int vIndex2, int vIndex3) {
             verticesIndex[0] = vIndex1;
             verticesIndex[1] = vIndex2;
             verticesIndex[2] = vIndex3;
 
-            normal = computeNormal();
+            computeNormalAndArea();
         }
 
         public boolean hasVertex(int vIndex) {
@@ -608,10 +704,10 @@ public class ObjectModel {
         }
 
         /**
-         * 更新法向量及二次方误差矩阵，当面的顶点改变时需调用此方法
+         * 更新法向量、面积及二次方误差矩阵，当面的顶点改变时需调用此方法
          */
         public void update() {
-            normal = computeNormal();
+            computeNormalAndArea();
             computeK();
         }
 
@@ -634,12 +730,14 @@ public class ObjectModel {
             }
         }
 
-        private Vector computeNormal() {
+        private void computeNormalAndArea() {
             Vertex p1 = vertexList.get(verticesIndex[0]);
             Vertex p2 = vertexList.get(verticesIndex[1]);
             Vertex p3 = vertexList.get(verticesIndex[2]);
-            return Vector.substract(p1.position, p2.position).crossProduct(Vector.substract
-                    (p3.position, p2.position)).normalize();
+            Vector n = Vector.minus(p1.position, p2.position).crossProduct(Vector.minus
+                    (p3.position, p2.position));
+            normal = n.normalize();
+            area = n.magnitude() / 2;
         }
 
         @Override

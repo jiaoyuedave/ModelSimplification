@@ -31,6 +31,10 @@ import static android.opengl.GLES20.glViewport;
 
 public class SceneRenderer implements GLSurfaceView.Renderer {
 
+    public static final int DINOSAUR = 1;
+    public static final int BUNNY = 2;
+    public int model = 2;
+
     private final Context mContext;
 
     private LoadedObjectShaderProgram loProgram;
@@ -51,20 +55,37 @@ public class SceneRenderer implements GLSurfaceView.Renderer {
         loProgram = new LoadedObjectShaderProgram(mContext);
 
         try {
-            InputStream in = mContext.getAssets().open("dinosaur.2k.obj");
-            Reader reader = new BufferedReader(new InputStreamReader(in));
-            ObjectModel objectModel = new ObjectModel(reader);
-            objectModel.simplifiedTo(190);
+            if (model == DINOSAUR) {
+                InputStream in = mContext.getAssets().open("dinosaur.2k.obj");
+                Reader reader = new BufferedReader(new InputStreamReader(in));
+                ObjectModel objectModel = new ObjectModel(reader);
+//                objectModel.simplifiedTo(500);
+                objectModel.simplifiedToRatio(0.1f);
 //            loadedObject = objectModel.toIndexedGLObject();
-            loadedObject = objectModel.toGLObject();
+                loadedObject = objectModel.toGLObject();
+            } else if (model == BUNNY) {
+                InputStream in = mContext.getAssets().open("bunny.obj");
+                Reader reader = new BufferedReader(new InputStreamReader(in));
+                ObjectModel objectModel = new ObjectModel(reader);
+                objectModel.simplifiedToRatio(0.1f);
+//                objectModel.simplifiedTo(500);
+//            loadedObject = objectModel.toIndexedGLObject();
+                loadedObject = objectModel.toGLObject();
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        loadedObject.bindProgram(loProgram);
-        loadedObject.rotate(90, 0, 0, 1);
-        loadedObject.rotate(90, 0, 1, 0);
-        loadedObject.setColor(0.9f, 0.9f, 0.9f, 1f);
+        if (model == DINOSAUR) {
+            loadedObject.bindProgram(loProgram);
+            loadedObject.rotate(90, 0, 0, 1);
+            loadedObject.rotate(90, 0, 1, 0);
+            loadedObject.setColor(0.9f, 0.9f, 0.9f, 1f);
+        } else if (model == BUNNY) {
+            loadedObject.bindProgram(loProgram);
+            loadedObject.translate(0, -5, 180);
+            loadedObject.setColor(0.9f, 0.9f, 0.9f, 1f);
+        }
     }
 
     @Override
