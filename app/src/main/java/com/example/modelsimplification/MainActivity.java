@@ -14,6 +14,8 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Toast;
 
+import com.example.modelsimplification.util.LoggerConfig;
+
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
@@ -77,14 +79,15 @@ public class MainActivity extends AppCompatActivity {
                     scaleFactor = -scaleFactor;
                 }
 
-//                glSurfaceView.queueEvent(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        sceneRenderer.handleScaleGesture(scaleFactor);
-//                    }
-//                });
-//                Log.d(TAG, "onScale: " + scaleFactor);
-                sceneRenderer.handleScaleGesture(scaleFactor);
+                glSurfaceView.queueEvent(new Runnable() {
+                    @Override
+                    public void run() {
+                        sceneRenderer.handleScaleGesture(scaleFactor);
+                    }
+                });
+                if (BuildConfig.DEBUG && LoggerConfig.ANDROID_DEBUG) {
+                    Log.d(TAG, "onScale: " + scaleFactor);
+                }
                 return true;
             }
 
@@ -124,13 +127,12 @@ public class MainActivity extends AppCompatActivity {
                         previousX = event.getX();
                         previousY = event.getY();
 
-//                        glSurfaceView.queueEvent(new Runnable() {
-//                            @Override
-//                            public void run() {
-//                                sceneRenderer.handleTouchDrag(deltaX, deltaY);
-//                            }
-//                        });
-                        sceneRenderer.handleTouchDrag(deltaX, deltaY);
+                        glSurfaceView.queueEvent(new Runnable() {
+                            @Override
+                            public void run() {
+                                sceneRenderer.handleTouchDrag(deltaX, deltaY);
+                            }
+                        });
                     }
                 }
                 return true;

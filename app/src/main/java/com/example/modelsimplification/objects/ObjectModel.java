@@ -30,7 +30,6 @@ public class ObjectModel {
 
     private final List<Vertex> vertexList = new ArrayList<>();          // 顶点列表
     private final List<Face> faceList = new ArrayList<>();              // 三角面列表
-    private final List<CollapseRecord> permutation = new ArrayList<>();       // 记录边折叠的顺序
     private IndexMinPQ<Float> costHeap;                               // 折叠代价的优先队列
     private int vN;                                                   // 模型中顶点的数目
     private int fN;                                                   // 模型中三角面的数目
@@ -92,24 +91,16 @@ public class ObjectModel {
         computeAllCost();
 
         while (vN > vertexNum) {
-            if (BuildConfig.DEBUG && LoggerConfig.ANDROID_DEBUG) {
-                Log.d(TAG, "vertex index:" + costHeap.minIndex() + "\t" + "cost:" + costHeap.min());
-            }
+//            if (BuildConfig.DEBUG && LoggerConfig.ANDROID_DEBUG) {
+//                Log.d(TAG, "vertex index:" + costHeap.minIndex() + "\t" + "cost:" + costHeap.min());
+//            }
 
             // 取出折叠代价最小的顶点
             int vIndex = costHeap.delMin();
 
-            // 记录折叠的信息，用于恢复
-            CollapseRecord record = new CollapseRecord();
-            record.setOriginalVertex(vIndex);
 
             // 进行一次边收缩
             collapse(vIndex);
-
-            // 记录新顶点的信息
-            record.setNewVertex(vIndex);
-
-            permutation.add(record);
         }
     }
 
@@ -244,8 +235,8 @@ public class ObjectModel {
         // Add this vertex to the array
         vertexList.add(p);
 
-//        if (BuildConfig.DEBUG) {
-//            System.out.println("read vertex:" + p);
+//        if (BuildConfig.DEBUG && LoggerConfig.ANDROID_DEBUG) {
+//            Log.d(TAG, "readVertex: " + p);
 //        }
     } // End of readVertex
 
@@ -257,7 +248,13 @@ public class ObjectModel {
             points.add((int) st.nval - 1);
 //			st.getNumber();
             st.getToken();
-            if(st.ttype==StreamTokenizer.TT_EOL)break;else st.pushBack();
+            while (st.ttype == '/') {
+                // 忽略'/'后面的数据，只读取顶点数据
+                st.getNumber();
+                st.getToken();
+            }
+            if(st.ttype==StreamTokenizer.TT_EOL)break;
+            else st.pushBack();
         }
 
         assert (points.size() == 3);
@@ -279,6 +276,10 @@ public class ObjectModel {
             }
         }
         st.skipToNextLine();
+
+//        if (BuildConfig.DEBUG && LoggerConfig.ANDROID_DEBUG) {
+//            Log.d(TAG, "readFace: " + face);
+//        }
     } // End of readFace
 
     /**
@@ -552,39 +553,6 @@ public class ObjectModel {
                 }
             }
 
-/*            // 矩阵不可逆，则选择收缩点在两个端点或者中点
-            // 收缩点选在此端点
-            float[] v1 = this.position.toFloatArray();
-            float[] temp = new float[4];
-            Matrix.multiplyMV(temp, 0, Qe, 0, v1, 0);
-            float cost1 = MatrixHelper.dotProduct(v1, temp);
-            if (cost1 < cost) {
-                cost = cost1;
-                System.arraycopy(v1, 0, newPosition, 0, 4);
-            }
-
-            // 收缩点为另一端点
-            float[] v2 = v.position.toFloatArray();
-            Matrix.multiplyMV(temp, 0, Qe, 0, v2, 0);
-            float cost2 = MatrixHelper.dotProduct(v2, temp);
-            if (cost2 < cost) {
-                cost = cost2;
-                System.arraycopy(v2, 0, newPosition, 0, 4);
-            }
-
-            // 收缩点为中点
-            float[] v3 = new float[]{
-                    (this.position.x + v.position.x) / 2,
-                    (this.position.y + v.position.y) / 2,
-                    (this.position.z + v.position.z) / 2,
-                    1};
-            Matrix.multiplyMV(temp, 0, Qe, 0, v3, 0);
-            float cost3 = MatrixHelper.dotProduct(v3, temp);
-            if (cost3 < cost) {
-                cost = cost3;
-                System.arraycopy(v3, 0, newPosition, 0, 4);
-            }*/
-
             return cost;
         }
 
@@ -592,15 +560,15 @@ public class ObjectModel {
         public String toString() {
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.append("Position:" + position + "\n");
-            stringBuilder.append("Normal:" + normal + "\n");
-            stringBuilder.append("Neighbors: ");
-            for (int vIndex : adjacentVerticesIndex) {
-                stringBuilder.append(vIndex + " ");
-            }
-            stringBuilder.append("\nFaces: ");
-            for (int fIndex : adjacentFacesIndex) {
-                stringBuilder.append(fIndex + " ");
-            }
+//            stringBuilder.append("Normal:" + normal + "\n");
+//            stringBuilder.append("Neighbors: ");
+//            for (int vIndex : adjacentVerticesIndex) {
+//                stringBuilder.append(vIndex + " ");
+//            }
+//            stringBuilder.append("\nFaces: ");
+//            for (int fIndex : adjacentFacesIndex) {
+//                stringBuilder.append(fIndex + " ");
+//            }
             return stringBuilder.toString();
         }
     }
@@ -680,26 +648,26 @@ public class ObjectModel {
         }
     }
 
-    private class CollapseRecord {
-        public int vIndex1;
-        public Vertex v1;
-        public int vIndex2;
-        public Vertex v2;
-        public int newIndex;
-        public Vertex newVertex;
-
-        public void setOriginalVertex(int vIndex) {
-            vIndex1 = vIndex;
-            v1 = vertexList.get(vIndex1);
-            vIndex2 = v1.candidateIndex;
-            v2 = vertexList.get(vIndex2);
-        }
-
-        public void setNewVertex(int vIndex) {
-            newIndex = vIndex;
-            newVertex = vertexList.get(newIndex);
-        }
-    }
+//    private class CollapseRecord {
+//        public int vIndex1;
+//        public Vector p1;
+//        public int vIndex2;
+//        public Vector p2;
+//        public int newIndex;
+//        public Vector p;
+//
+//        public void setOriginalVertex(int vIndex) {
+//            vIndex1 = vIndex;
+//            p1 = vertexList.get(vIndex1).position;
+//            vIndex2 = vertexList.get(vIndex1).candidateIndex;
+//            p2 = vertexList.get(vIndex2).position;
+//        }
+//
+//        public void setNewVertex(int vIndex) {
+//            newIndex = vIndex;
+//            p = vertexList.get(newIndex).position;
+//        }
+//    }
 
 
     /**

@@ -54,7 +54,7 @@ public class SceneRenderer implements GLSurfaceView.Renderer {
             InputStream in = mContext.getAssets().open("dinosaur.2k.obj");
             Reader reader = new BufferedReader(new InputStreamReader(in));
             ObjectModel objectModel = new ObjectModel(reader);
-            objectModel.simplifiedTo(500);
+            objectModel.simplifiedTo(190);
 //            loadedObject = objectModel.toIndexedGLObject();
             loadedObject = objectModel.toGLObject();
         } catch (IOException e) {
@@ -72,7 +72,7 @@ public class SceneRenderer implements GLSurfaceView.Renderer {
         // Set the OpenGL viewport to fill the entire surface
         glViewport(0, 0, width, height);
 
-        GlobalState.setPerspectiveProjection(45, (float) width / height, 1, 1000);
+        GlobalState.setPerspectiveProjection(45, (float) width / height, 1, 100000);
         GlobalState.setCamera(0f, 0f, 200f, 0f, 0f, 0f, 0f, 1f, 0f);
         GlobalState.setLightDirection(-1, 0, -3);
     }
