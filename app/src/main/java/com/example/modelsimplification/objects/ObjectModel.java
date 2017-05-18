@@ -31,7 +31,7 @@ public class ObjectModel {
     public static final int MODE_QEM_A = 1;
     public static final int MODE_QEM_V = 2;
     public static final int MODE_QEM_N = 4;
-    private int mode = 4;
+    private int mode = 5;
 
     private static final String TAG = "ObjectModel";
 
@@ -490,9 +490,9 @@ public class ObjectModel {
                 Face temp = faceList.get(fIndex);
                 MatrixHelper.add(Q, Q, temp.K);
 
-                if (mode == MODE_QEM_A) {
+                if ((mode & MODE_QEM_A) == MODE_QEM_A) {
                     MatrixHelper.multiplyK(Q, Q, temp.area);
-                } else if (mode == MODE_QEM_V) {
+                } else if ((mode & MODE_QEM_V) == MODE_QEM_V) {
                     MatrixHelper.multiplyK(Q, Q, temp.area * temp.area);
                 }
             }
@@ -572,7 +572,7 @@ public class ObjectModel {
                 }
             }
 
-            if (mode == MODE_QEM_N) {
+            if ((mode & MODE_QEM_N) == MODE_QEM_N) {
                 List<Integer> sides = new ArrayList<>();
                 for (int fIndex : this.adjacentFacesIndex) {
                     if (faceList.get(fIndex).hasVertex(vIndex)) {
@@ -589,12 +589,17 @@ public class ObjectModel {
                 int maxIndex = -1;
 
                 float S = 0;    // 总面积
+                float smax = 0; // 面积最大的一个面的面积
 
-                float maxcurv = 0;
+                float maxcurv = -1;
                 for (int i : this.adjacentFacesIndex) {
                     Face f1 = faceList.get(i);
                     S += f1.area;
-                    float mincurv = 1.1f;
+                    if (f1.area > smax) {
+                        smax = f1.area;
+                    }
+
+                    float mincurv = 1;
                     for (int j : sides) {
                         Face f2 = faceList.get(j);
                         float dotProduct = f1.normal.dotProduct(f2.normal);
@@ -604,7 +609,7 @@ public class ObjectModel {
                             minIndex = j;
                         }
                     }
-                    if (mincurv >= maxcurv) {
+                    if (mincurv > maxcurv) {
                         maxcurv = mincurv;
                         maxIndex = i;
                     }
@@ -612,7 +617,11 @@ public class ObjectModel {
                 for (int i : v.adjacentFacesIndex) {
                     Face f1 = faceList.get(i);
                     S += f1.area;
-                    float mincurv = 1.1f;
+                    if (f1.area > smax) {
+                        smax = f1.area;
+                    }
+
+                    float mincurv = 1;
                     for (int j : sides) {
                         Face f2 = faceList.get(j);
                         float dotProduct = f1.normal.dotProduct(f2.normal);
@@ -622,7 +631,7 @@ public class ObjectModel {
                             minIndex = j;
                         }
                     }
-                    if (mincurv >= maxcurv) {
+                    if (mincurv > maxcurv) {
                         maxcurv = mincurv;
                         maxIndex = i;
                     }
@@ -638,13 +647,19 @@ public class ObjectModel {
                             ".adjacentFacesIndex: " + v.adjacentFacesIndex.size() + " sides: " +
                             sides.size());
                 }
-                float alpha = (faceList.get(minIndex).area + faceList.get(maxIndex).area)  * 100 / S;
+//                float alpha = (faceList.get(minIndex).area + faceList.get(maxIndex).area) / S;
+                float alpha = 2 * (faceList.get(minIndex).area + faceList.get(maxIndex).area) / S;
+//                float alpha = (faceList.get(minIndex).area + faceList.get(maxIndex).area) / (2 * smax);
+                if (alpha > 1) {
+                    alpha = 1;
+                }
 
-//                if (BuildConfig.DEBUG && LoggerConfig.ANDROID_DEBUG) {
+                if (BuildConfig.DEBUG && LoggerConfig.ANDROID_DEBUG) {
 //                    Log.d(TAG, "cost: " + cost + " 法向量约束因子: " + alpha * maxcurv);
-//                }
+//                    Log.d(TAG, "alpha: " + alpha);
+                }
 
-                cost = cost * alpha * maxcurv;
+                cost = cost * (1 - alpha + alpha * maxcurv);
             }
 
             return cost;

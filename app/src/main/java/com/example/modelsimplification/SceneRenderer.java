@@ -33,7 +33,8 @@ public class SceneRenderer implements GLSurfaceView.Renderer {
 
     public static final int DINOSAUR = 1;
     public static final int BUNNY = 2;
-    public int model = 2;
+    public static final int BUILDING = 3;
+    public int model = 3;
 
     private final Context mContext;
 
@@ -67,25 +68,29 @@ public class SceneRenderer implements GLSurfaceView.Renderer {
                 InputStream in = mContext.getAssets().open("bunny.obj");
                 Reader reader = new BufferedReader(new InputStreamReader(in));
                 ObjectModel objectModel = new ObjectModel(reader);
-                objectModel.simplifiedToRatio(0.1f);
-//                objectModel.simplifiedTo(500);
-//            loadedObject = objectModel.toIndexedGLObject();
+                objectModel.simplifiedToRatio(0.005f);
+                loadedObject = objectModel.toGLObject();
+            } else if (model == BUILDING) {
+                InputStream in = mContext.getAssets().open("Building.obj");
+                Reader reader = new BufferedReader(new InputStreamReader(in));
+                ObjectModel objectModel = new ObjectModel(reader);
+//                objectModel.simplifiedToRatio(0.8f);
                 loadedObject = objectModel.toGLObject();
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
 
+        loadedObject.bindProgram(loProgram);
         if (model == DINOSAUR) {
-            loadedObject.bindProgram(loProgram);
             loadedObject.rotate(90, 0, 0, 1);
             loadedObject.rotate(90, 0, 1, 0);
-            loadedObject.setColor(0.9f, 0.9f, 0.9f, 1f);
         } else if (model == BUNNY) {
-            loadedObject.bindProgram(loProgram);
             loadedObject.translate(0, -5, 180);
-            loadedObject.setColor(0.9f, 0.9f, 0.9f, 1f);
+        } else if (model == BUILDING) {
+
         }
+        loadedObject.setColor(0.9f, 0.9f, 0.9f, 1f);
     }
 
     @Override
