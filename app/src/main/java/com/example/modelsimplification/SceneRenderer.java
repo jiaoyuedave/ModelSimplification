@@ -2,10 +2,13 @@ package com.example.modelsimplification;
 
 import android.content.Context;
 import android.opengl.GLSurfaceView;
+import android.util.Log;
 
 import com.example.modelsimplification.objects.GLObject;
 import com.example.modelsimplification.objects.ObjectModel;
 import com.example.modelsimplification.programs.LoadedObjectShaderProgram;
+import com.example.modelsimplification.util.LoggerConfig;
+import com.example.modelsimplification.util.Stopwatch;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -31,10 +34,12 @@ import static android.opengl.GLES20.glViewport;
 
 public class SceneRenderer implements GLSurfaceView.Renderer {
 
+    private static final String TAG = "SceneRenderer";
+
     public static final int DINOSAUR = 1;
     public static final int BUNNY = 2;
     public static final int BUILDING = 3;
-    public int model = 3;
+    public int model = 2;
 
     private final Context mContext;
 
@@ -61,14 +66,19 @@ public class SceneRenderer implements GLSurfaceView.Renderer {
                 Reader reader = new BufferedReader(new InputStreamReader(in));
                 ObjectModel objectModel = new ObjectModel(reader);
 //                objectModel.simplifiedTo(500);
+                Stopwatch stopwatch = new Stopwatch();
                 objectModel.simplifiedToRatio(0.1f);
+                if (BuildConfig.DEBUG && LoggerConfig.ANALYSIS) {
+                    Log.d(TAG, "简化消耗的时间: " + stopwatch.elapsedTime() + "s");
+                }
 //            loadedObject = objectModel.toIndexedGLObject();
                 loadedObject = objectModel.toGLObject();
             } else if (model == BUNNY) {
                 InputStream in = mContext.getAssets().open("bunny.obj");
                 Reader reader = new BufferedReader(new InputStreamReader(in));
                 ObjectModel objectModel = new ObjectModel(reader);
-                objectModel.simplifiedToRatio(0.005f);
+//                objectModel.simplifiedToRatio(0.99f);
+                objectModel.simplifiedTo(300);
                 loadedObject = objectModel.toGLObject();
             } else if (model == BUILDING) {
                 InputStream in = mContext.getAssets().open("Building.obj");

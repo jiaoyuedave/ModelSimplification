@@ -31,7 +31,7 @@ public class ObjectModel {
     public static final int MODE_QEM_A = 1;
     public static final int MODE_QEM_V = 2;
     public static final int MODE_QEM_N = 4;
-    private int mode = 5;
+    private int mode = 0;
 
     private static final String TAG = "ObjectModel";
 
@@ -108,6 +108,10 @@ public class ObjectModel {
 
             // 进行一次边收缩
             collapse(vIndex);
+        }
+        if (BuildConfig.DEBUG && LoggerConfig.ANDROID_DEBUG) {
+            Log.d(TAG, "顶点数：" + vN);
+            Log.d(TAG, "面数：" + fN);
         }
     }
 
@@ -585,7 +589,7 @@ public class ObjectModel {
                 }
 
                 // 保存法向量相差最大的两个面的索引
-                int minIndex = -1;
+                int mIndex = -1;
                 int maxIndex = -1;
 
                 float S = 0;    // 总面积
@@ -599,18 +603,18 @@ public class ObjectModel {
                         smax = f1.area;
                     }
 
-                    float mincurv = 1;
+                    float mcurv = 2;
                     for (int j : sides) {
                         Face f2 = faceList.get(j);
                         float dotProduct = f1.normal.dotProduct(f2.normal);
                         float curv = (1 - dotProduct) / 2;
-                        if (curv < mincurv) {
-                            mincurv = curv;
-                            minIndex = j;
+                        if (curv < mcurv) {
+                            mcurv = curv;
+                            mIndex = j;
                         }
                     }
-                    if (mincurv > maxcurv) {
-                        maxcurv = mincurv;
+                    if (mcurv > maxcurv) {
+                        maxcurv = mcurv;
                         maxIndex = i;
                     }
                 }
@@ -621,18 +625,18 @@ public class ObjectModel {
                         smax = f1.area;
                     }
 
-                    float mincurv = 1;
+                    float mcurv = 2;
                     for (int j : sides) {
                         Face f2 = faceList.get(j);
                         float dotProduct = f1.normal.dotProduct(f2.normal);
                         float curv = (1 - dotProduct) / 2;
-                        if (curv < mincurv) {
-                            mincurv = curv;
-                            minIndex = j;
+                        if (curv < mcurv) {
+                            mcurv = curv;
+                            mIndex = j;
                         }
                     }
-                    if (mincurv > maxcurv) {
-                        maxcurv = mincurv;
+                    if (mcurv > maxcurv) {
+                        maxcurv = mcurv;
                         maxIndex = i;
                     }
                 }
@@ -641,14 +645,14 @@ public class ObjectModel {
                 for (int i : sides) {
                     S -= faceList.get(i).area;
                 }
-                if (minIndex == -1 || maxIndex == -1) {
-                    Log.e(TAG, "minIndex: " + minIndex + " maxIndex: " + maxIndex + " maxcurv: " + maxcurv);
+                if (mIndex == -1 || maxIndex == -1) {
+                    Log.e(TAG, "minIndex: " + mIndex + " maxIndex: " + maxIndex + " maxcurv: " + maxcurv);
                     Log.e(TAG, "this.adjacentFacesIndex: " + this.adjacentFacesIndex.size() + " v" +
                             ".adjacentFacesIndex: " + v.adjacentFacesIndex.size() + " sides: " +
                             sides.size());
                 }
 //                float alpha = (faceList.get(minIndex).area + faceList.get(maxIndex).area) / S;
-                float alpha = 2 * (faceList.get(minIndex).area + faceList.get(maxIndex).area) / S;
+                float alpha = 4 * (faceList.get(mIndex).area + faceList.get(maxIndex).area) / S;
 //                float alpha = (faceList.get(minIndex).area + faceList.get(maxIndex).area) / (2 * smax);
                 if (alpha > 1) {
                     alpha = 1;
