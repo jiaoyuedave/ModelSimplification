@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.net.Socket;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -39,7 +40,8 @@ public class SceneRenderer implements GLSurfaceView.Renderer {
     public static final int DINOSAUR = 1;
     public static final int BUNNY = 2;
     public static final int BUILDING = 3;
-    public int model = 2;
+    public static final int CLIENT = 10;
+    public int model = 10;
 
     private final Context mContext;
 
@@ -86,6 +88,11 @@ public class SceneRenderer implements GLSurfaceView.Renderer {
                 ObjectModel objectModel = new ObjectModel(reader);
 //                objectModel.simplifiedToRatio(0.8f);
                 loadedObject = objectModel.toGLObject();
+            } else if (model == CLIENT) {
+                Log.d(TAG, "连接中...");
+                Socket socket = new Socket("223.3.5.83", 5000);
+                Log.d(TAG, "连接成功.");
+                loadedObject = new GLObject(socket.getInputStream());
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -95,7 +102,7 @@ public class SceneRenderer implements GLSurfaceView.Renderer {
         if (model == DINOSAUR) {
             loadedObject.rotate(90, 0, 0, 1);
             loadedObject.rotate(90, 0, 1, 0);
-        } else if (model == BUNNY) {
+        } else if (model == BUNNY || model == CLIENT) {
             loadedObject.translate(0, -5, 180);
         } else if (model == BUILDING) {
 

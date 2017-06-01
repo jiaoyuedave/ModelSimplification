@@ -1,6 +1,7 @@
 package com.example.modelsimplification.objects;
 
 import android.opengl.Matrix;
+import android.util.Log;
 
 import com.example.modelsimplification.BuildConfig;
 import com.example.modelsimplification.GlobalState;
@@ -8,6 +9,11 @@ import com.example.modelsimplification.data.MatrixStack;
 import com.example.modelsimplification.data.VertexArray;
 import com.example.modelsimplification.programs.LoadedObjectShaderProgram;
 import com.example.modelsimplification.util.LoggerConfig;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 
 import static android.opengl.GLES20.*;
 
@@ -17,6 +23,8 @@ import static android.opengl.GLES20.*;
  */
 
 public class GLObject {
+
+    private static final String TAG = "GLObject";
 
     protected static final int POSITION_COMPONENT_COUNT = 3;
     protected static final int NORMAL_COMPONENT_COUNT = 3;
@@ -45,7 +53,7 @@ public class GLObject {
         color = new float[]{1, 1, 1, 1};
 
         // Initialize vertex array
-        vCount = vertices.length;
+        vCount = vertices.length / 3;
         vertexArray = new VertexArray(vertices);
 
         // Initialize normal array
@@ -63,6 +71,67 @@ public class GLObject {
             }
             System.out.println();
         }
+    }
+
+    public GLObject(InputStream is) {
+        MMatrix = new float[16];
+        Matrix.setRotateM(MMatrix, 0, 0, 1, 0, 0);
+        color = new float[]{1, 1, 1, 1};
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+        float[] vertices = new float[5000];
+        float[] normals = new float[5000];
+        try {
+            String str;
+            while ((str = reader.readLine()) != null) {
+                Log.d(TAG, "readLine:" + str);
+                if (vCount + 8 >= vertices.length) {
+                    // 数组长度加倍
+                    float[] tempv = new float[vertices.length * 2];
+                    float[] tempn = new float[normals.length * 2];
+                    for (int i = 0; i < vCount; i++) {
+                        tempv[i] = vertices[i];
+                        tempn[i] = normals[i];
+                    }
+                    vertices = tempv;
+                    normals = tempn;
+                }
+
+                String[] ss = str.split(" ");
+                vertices[vCount    ] = Float.parseFloat(ss[0]);
+                vertices[vCount + 1] = Float.parseFloat(ss[1]);
+                vertices[vCount + 2] = Float.parseFloat(ss[2]);
+                vertices[vCount + 3] = Float.parseFloat(ss[3]);
+                vertices[vCount + 4] = Float.parseFloat(ss[4]);
+                vertices[vCount + 5] = Float.parseFloat(ss[5]);
+                vertices[vCount + 6] = Float.parseFloat(ss[6]);
+                vertices[vCount + 7] = Float.parseFloat(ss[7]);
+                vertices[vCount + 8] = Float.parseFloat(ss[8]);
+
+                normals[vCount    ] = Float.parseFloat(ss[9]);
+                normals[vCount + 1] = Float.parseFloat(ss[10]);
+                normals[vCount + 2] = Float.parseFloat(ss[11]);
+                normals[vCount + 3] = Float.parseFloat(ss[9]);
+                normals[vCount + 4] = Float.parseFloat(ss[10]);
+                normals[vCount + 5] = Float.parseFloat(ss[11]);
+                normals[vCount + 6] = Float.parseFloat(ss[9]);
+                normals[vCount + 7] = Float.parseFloat(ss[10]);
+                normals[vCount + 8] = Float.parseFloat(ss[11]);
+
+                vCount  = vCount + 9;
+            }
+            reader.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        vCount  = vCount / 3;
+
+        // Initialize vertex array
+        vertexArray = new VertexArray(vertices);
+
+        // Initialize normal array
+        normalArray = new VertexArray(normals);
     }
 
     public void bindProgram(LoadedObjectShaderProgram program) {
